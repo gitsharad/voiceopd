@@ -1,0 +1,137 @@
+:host { display: block; }
+
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #0B1437;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+
+  &::-webkit-scrollbar { width: 0; }
+}
+
+// Mobile close button (hidden on desktop)
+.sidebar-close-btn {
+  display: none;
+  position: absolute; top: 14px; right: 14px;
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,.08); border: none; border-radius: 8px;
+  color: rgba(255,255,255,.6); cursor: pointer; font-size: 18px; line-height: 1;
+  align-items: center; justify-content: center;
+  &:hover { background: rgba(255,255,255,.14); color: #fff; }
+}
+
+@media(max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  :host(.open) .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+  }
+}
+
+.sidebar-logo {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.logo-icon {
+  width: 36px; height: 36px;
+  background: #00C896; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  svg { width: 20px; height: 20px; }
+}
+
+.logo-text {
+  color: #fff; font-weight: 800; font-size: 17px;
+  font-family: 'Space Grotesk', sans-serif; letter-spacing: -.3px;
+}
+.logo-sub {
+  color: rgba(255,255,255,.35); font-size: 10px;
+  font-weight: 500; letter-spacing: .3px;
+  margin-top: 1px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+}
+
+.nav { padding: 10px 10px; flex: 1; }
+
+.nav-section {
+  font-size: 10px; color: rgba(255,255,255,.25);
+  font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; padding: 10px 8px 6px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  color: rgba(255,255,255,.5); font-size: 13.5px;
+  font-weight: 500; cursor: pointer;
+  transition: all .15s; margin-bottom: 2px;
+  text-decoration: none; position: relative;
+
+  .nav-svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+  &:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.85); }
+
+  &.active {
+    background: rgba(0,200,150,.12);
+    color: #00C896;
+    &::before {
+      content: ''; position: absolute; left: 0;
+      top: 50%; transform: translateY(-50%);
+      width: 3px; height: 20px;
+      background: #00C896; border-radius: 0 3px 3px 0;
+    }
+  }
+}
+
+// Admin link — slight gold accent
+.admin-link {
+  &.active { background: rgba(245,158,11,.15) !important; color: #F59E0B !important; }
+  &:hover:not(.active) { color: #FCD34D !important; }
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: #00C896; color: #0B1437;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px;
+  &.amber { background: #F59E0B; color: #fff; }
+}
+
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255,255,255,.07);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.doc-avatar {
+  width: 34px; height: 34px;
+  background: #00C896; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #0B1437; font-weight: 700; font-size: 12px;
+  flex-shrink: 0;
+}
+
+.doc-info { flex: 1; min-width: 0; }
+.doc-name { color: #fff; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-role { color: rgba(255,255,255,.35); font-size: 11px; }
+
+.logout-btn {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.3); padding: 4px;
+  border-radius: 6px; transition: all .15s;
+  &:hover { color: rgba(255,255,255,.7); background: rgba(255,255,255,.06); }
+}

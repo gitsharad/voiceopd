@@ -1,0 +1,83 @@
+<div class="patients-page">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Patient Records</h2>
+      <p class="page-sub">{{ total | number }} total patients</p>
+    </div>
+    <button class="btn-primary" (click)="openVoiceModal()">+ Register Patient</button>
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" width="16" height="16">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input
+        class="search-input"
+        placeholder="Search by name, phone, or patient ID…"
+        [value]="searchQuery"
+        (input)="onSearch($any($event.target).value)"
+      >
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-grid" *ngIf="loading">
+    <div class="pat-card skeleton" *ngFor="let i of [1,2,3,4,5,6]"></div>
+  </div>
+
+  <!-- Patient cards -->
+  <div class="pat-grid" *ngIf="!loading">
+    <a class="pat-card" *ngFor="let p of patients; let i = index" [routerLink]="['/patients', p._id]">
+      <div class="pat-card-top">
+        <div class="pat-avatar" [style.background]="getAvatarColor(i)" [style.color]="getTextColor(i)">
+          {{ getInitials(p.name) }}
+        </div>
+        <div>
+          <div class="pat-name">{{ p.name }}</div>
+          <div class="pat-id">{{ p.patientId }}</div>
+        </div>
+        <span class="via-chip" [class.voice]="p.registeredVia === 'voice'">
+          {{ p.registeredVia === 'voice' ? '🎤' : '📝' }}
+        </span>
+      </div>
+      <div class="pat-details">
+        <div class="detail-row">
+          <span class="detail-label">Age / Gender</span>
+          <span>{{ p.age }} yrs · {{ p.gender | titlecase }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Phone</span>
+          <span>+91 {{ p.phone }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Visits</span>
+          <span class="visits-num">{{ p.totalVisits }}</span>
+        </div>
+      </div>
+      <div class="pat-card-footer">
+        <span class="status-chip active" *ngIf="p.isActive">Active</span>
+        <span class="last-visit" *ngIf="p.lastVisit">Last: {{ p.lastVisit | date:'dd MMM' }}</span>
+        <button class="btn-history" (click)="openHistory(p._id, $event)">History</button>
+        <button class="btn-queue" (click)="addToQueue(p, $event)" [disabled]="queueingId === p._id">
+          {{ queueingId === p._id ? '…' : '+ Queue' }}
+        </button>
+      </div>
+    </a>
+
+    <div class="empty-patients" *ngIf="!patients.length">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" width="48" height="48">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      </svg>
+      <p>No patients found</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="pages > 1">
+    <button (click)="goPage(page - 1)" [disabled]="page === 1">← Prev</button>
+    <span>Page {{ page }} of {{ pages }}</span>
+    <button (click)="goPage(page + 1)" [disabled]="page === pages">Next →</button>
+  </div>
+</div>

@@ -1,0 +1,137 @@
+<div class="rx-page">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Prescriptions</h2>
+      <p class="page-sub">{{ total | number }} total prescriptions</p>
+    </div>
+    <a class="btn-primary" routerLink="/prescriptions/new">+ New Prescription</a>
+  </div>
+
+  <div class="rx-grid" *ngIf="!loading">
+    <div class="rx-card" *ngFor="let rx of prescriptions">
+      <div class="rx-card-head">
+        <div class="rx-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="rx-card-info">
+          <div class="rx-num">{{ rx.prescriptionNumber }}</div>
+          <div class="rx-date">{{ rx.createdAt | date:'dd MMM yyyy, HH:mm' }}</div>
+        </div>
+        <span class="via-chip" *ngIf="rx.generatedViaVoice">🎤 Voice</span>
+      </div>
+
+      <div class="rx-patient">
+        <strong>{{ rx.patientId?.name }}</strong>
+        <span>{{ rx.patientId?.age }}y · {{ rx.patientId?.gender | titlecase }}</span>
+      </div>
+
+      <div class="rx-diagnosis" *ngIf="rx.diagnosis">{{ rx.diagnosis }}</div>
+
+      <div class="rx-medicines">
+        <div class="rx-med" *ngFor="let m of rx.medicines | slice:0:3">
+          <span class="med-dot"></span>
+          <span>{{ m.name }} {{ m.dosage }} — {{ m.frequency }} × {{ m.duration }}</span>
+        </div>
+        <div class="rx-more" *ngIf="rx.medicines.length > 3">+{{ rx.medicines.length - 3 }} more</div>
+      </div>
+
+      <!-- Delete confirm inline -->
+      <div class="delete-confirm" *ngIf="deleteConfirmId === rx._id">
+        <span>Delete this Rx?</span>
+        <button class="dc-cancel" (click)="cancelDeleteRx()">No</button>
+        <button class="dc-ok" [disabled]="deletingId === rx._id" (click)="deleteRx(rx._id)">
+          {{ deletingId === rx._id ? '…' : 'Yes' }}
+        </button>
+      </div>
+
+      <div class="rx-card-footer" *ngIf="deleteConfirmId !== rx._id">
+        <button class="del-btn" (click)="confirmDeleteRx(rx._id)" title="Delete">🗑</button>
+        <button class="wa-btn" (click)="openShare(rx)">
+          <span *ngIf="rx.whatsappSent">✓ Sent · Share</span>
+          <span *ngIf="!rx.whatsappSent">📤 Share</span>
+        </button>
+        <a class="view-btn" [routerLink]="['/prescriptions', rx._id]">View Rx</a>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!prescriptions.length">
+      <p>No prescriptions yet.</p>
+      <a class="btn-primary" routerLink="/prescriptions/new">Create First Prescription</a>
+    </div>
+  </div>
+
+  <div class="loading-grid" *ngIf="loading">
+    <div class="rx-card skeleton" *ngFor="let i of [1,2,3,4,5,6]"></div>
+  </div>
+
+  <div class="pagination" *ngIf="pages > 1">
+    <button (click)="goPage(page - 1)" [disabled]="page === 1">← Prev</button>
+    <span>Page {{ page }} of {{ pages }}</span>
+    <button (click)="goPage(page + 1)" [disabled]="page === pages">Next →</button>
+  </div>
+</div>
+
+<!-- ── Share modal ──────────────────────────────────────────────── -->
+<div class="share-overlay" *ngIf="shareRx" (click)="closeShare()">
+  <div class="share-modal" (click)="$event.stopPropagation()">
+
+    <div class="share-header">
+      <div class="share-title">📤 Share Prescription</div>
+      <button class="share-close" (click)="closeShare()">✕</button>
+    </div>
+
+    <!-- Patient info -->
+    <div class="share-patient">
+      <span class="sp-name">{{ shareRx?.patientId?.name }}</span>
+      <span class="sp-phone" *ngIf="shareRx?.patientId?.phone">📞 {{ shareRx?.patientId?.phone }}</span>
+      <span class="sp-phone no-phone" *ngIf="!shareRx?.patientId?.phone">No phone on record</span>
+    </div>
+
+    <!-- Message preview -->
+    <div class="share-msg-wrap">
+      <pre class="share-msg">{{ msgText }}</pre>
+    </div>
+
+    <!-- Share buttons -->
+    <div class="share-actions">
+      <button class="share-btn wa" (click)="sendWhatsApp()" [disabled]="sendingId === shareRx?._id">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+        <span>{{ sendingId === shareRx?._id ? 'Opening…' : 'WhatsApp' }}</span>
+      </button>
+
+      <button class="share-btn sms" (click)="sendSMS()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>SMS</span>
+      </button>
+
+      <button class="share-btn native" (click)="nativeShare()" *ngIf="canNativeShare">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        <span>More</span>
+      </button>
+
+      <button class="share-btn copy" (click)="copyMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span>{{ copied ? '✓ Copied!' : 'Copy' }}</span>
+      </button>
+    </div>
+
+    <p class="share-hint" *ngIf="!shareRx?.patientId?.phone">
+      ⚠ No phone number saved for this patient. Add it in Patient profile to enable direct WhatsApp/SMS.
+    </p>
+
+  </div>
+</div>

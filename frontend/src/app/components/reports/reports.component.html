@@ -1,0 +1,130 @@
+<div class="reports-page">
+  <div class="page-header">
+    <h2 class="page-title">Reports & Analytics</h2>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div>
+        <div class="summary-num">{{ totalWeeklyPatients }}</div>
+        <div class="summary-lbl">Patients This Week</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="summary-num">₹{{ totalWeeklyRevenue | number }}</div>
+        <div class="summary-lbl">Revenue This Week</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      <div>
+        <div class="summary-num">{{ topMedicines[0]?._id || '—' }}</div>
+        <div class="summary-lbl">Top Medicine</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="summary-num">{{ topDiagnoses[0]?._id || '—' }}</div>
+        <div class="summary-lbl">Top Diagnosis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <!-- Weekly OPD chart -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Weekly OPD Trend (Patients)</span></div>
+      <div class="panel-body">
+        <div class="bar-chart tall">
+          <div class="bar-wrap" *ngFor="let d of weeklyData">
+            <div class="bar-val">{{ d.patients }}</div>
+            <div class="bar blue" [style.height]="getBarPct(d.patients, weeklyMax)" [title]="d.patients + ' patients'"></div>
+            <span class="bar-lbl">{{ formatDay(d.date) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly revenue chart -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Weekly Revenue (₹)</span></div>
+      <div class="panel-body">
+        <div class="bar-chart tall">
+          <div class="bar-wrap" *ngFor="let d of weeklyData">
+            <div class="bar-val">₹{{ d.revenue | number:'1.0-0' }}</div>
+            <div class="bar teal" [style.height]="getBarPct(d.revenue, weeklyMax * 300 || 1)" [title]="'₹' + d.revenue"></div>
+            <span class="bar-lbl">{{ formatDay(d.date) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top medicines + diagnoses -->
+  <div class="lists-row">
+    <!-- Top Medicines -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Top Prescribed Medicines</span></div>
+      <div class="panel-body">
+        <div class="rank-list">
+          <div class="rank-item" *ngFor="let m of topMedicines; let i = index">
+            <div class="rank-num">{{ i + 1 }}</div>
+            <div class="rank-info">
+              <div class="rank-name">{{ m._id }}</div>
+              <div class="rank-bar-wrap">
+                <div class="rank-bar purple" [style.width]="getBarPct(m.count, medMax)"></div>
+              </div>
+            </div>
+            <div class="rank-count">{{ m.count }}×</div>
+          </div>
+          <div class="empty-state" *ngIf="!topMedicines.length">No data yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Diagnoses -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Top Diagnoses</span></div>
+      <div class="panel-body">
+        <div class="rank-list">
+          <div class="rank-item" *ngFor="let d of topDiagnoses; let i = index">
+            <div class="rank-num">{{ i + 1 }}</div>
+            <div class="rank-info">
+              <div class="rank-name">{{ d._id }}</div>
+              <div class="rank-bar-wrap">
+                <div class="rank-bar teal" [style.width]="getBarPct(d.count, diagMax)"></div>
+              </div>
+            </div>
+            <div class="rank-count">{{ d.count }}×</div>
+          </div>
+          <div class="empty-state" *ngIf="!topDiagnoses.length">No data yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

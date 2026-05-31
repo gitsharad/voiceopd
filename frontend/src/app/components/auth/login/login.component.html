@@ -1,0 +1,87 @@
+<!-- login.component.html -->
+<div class="auth-page">
+
+  <!-- ── Left brand panel (desktop) ─────────────────────────────── -->
+  <div class="auth-left">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" width="26" height="26">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+        </svg>
+      </div>
+      <span class="brand-name">VoiceOPD</span>
+    </div>
+    <h2>Voice Assisted OPD Management</h2>
+    <p>Manage your clinic's OPD effortlessly using voice commands in Marathi, Hindi &amp; English.</p>
+    <div class="feature-list">
+      <div class="feature-item" *ngFor="let f of features">
+        <span class="feature-dot">✓</span> {{ f }}
+      </div>
+    </div>
+    <div class="pricing-badge">Starting ₹999/month · 14-day free trial</div>
+  </div>
+
+  <!-- ── Right form area ─────────────────────────────────────────── -->
+  <div class="auth-right">
+
+    <!-- Mobile brand (shown only on small screens) -->
+    <div class="mobile-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" width="22" height="22">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        </svg>
+      </div>
+      <span class="brand-name">VoiceOPD</span>
+    </div>
+
+    <div class="auth-card">
+      <h1>Welcome back 👋</h1>
+      <p class="auth-sub">Sign in to your clinic account</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-group" [class.has-error]="isInvalid('email')">
+          <label>Email address</label>
+          <input formControlName="email" type="email"
+                 inputmode="email" autocomplete="email"
+                 placeholder="doctor@clinic.com">
+          <span class="field-error" *ngIf="isInvalid('email')">Valid email required</span>
+        </div>
+
+        <div class="form-group" [class.has-error]="isInvalid('password')">
+          <label>Password</label>
+          <div class="input-wrap">
+            <input formControlName="password"
+                   [type]="showPassword ? 'text' : 'password'"
+                   autocomplete="current-password"
+                   placeholder="••••••••">
+            <button type="button" class="eye-btn"
+                    (click)="showPassword = !showPassword"
+                    [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+              {{ showPassword ? '🙈' : '👁' }}
+            </button>
+          </div>
+          <span class="field-error" *ngIf="isInvalid('password')">Password required</span>
+        </div>
+
+        <div style="text-align:right;margin-bottom:12px;margin-top:-6px">
+          <a routerLink="/forgot-password" style="font-size:12px;color:#00A67D;font-weight:600;text-decoration:none">
+            Forgot password?
+          </a>
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="loading">
+          <span *ngIf="!loading">Sign In</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+      </form>
+
+      <div class="demo-hint">
+        <strong>Demo:</strong> doctor&#64;voiceopd.com / password123
+      </div>
+    </div>
+  </div>
+
+</div>

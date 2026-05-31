@@ -1,0 +1,258 @@
+<div class="dashboard">
+  <!-- Greeting bar -->
+  <div class="greeting-bar">
+    <div>
+      <h1 class="greeting-title">
+        {{ greeting }}, {{ auth.doctor?.name || "Doctor" }} 👋
+      </h1>
+      <p class="greeting-sub">
+        {{ today }} &nbsp;·&nbsp; <span class="opd-open">OPD is Open</span>
+      </p>
+    </div>
+    <button class="btn-primary" (click)="openVoiceModal()">
+      + New Patient (Voice)
+    </button>
+  </div>
+
+  <!-- Stats cards -->
+  <div class="stats-grid" *ngIf="!loading; else skeleton">
+    <div class="stat-card teal">
+      <div class="stat-icon teal">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      </div>
+      <div class="stat-num">{{ stats?.totalPatients ?? 0 | number }}</div>
+      <div class="stat-label">Total Patients</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon blue">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </div>
+      <div class="stat-num">{{ stats?.todayOPD ?? 0 }}</div>
+      <div class="stat-label">Today's OPD</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon amber">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+          <path
+            d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+          />
+        </svg>
+      </div>
+      <div class="stat-num">{{ stats?.pendingTokens ?? 0 }}</div>
+      <div class="stat-label">Pending Tokens</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon purple">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path
+            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+          />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      </div>
+      <div class="stat-num">{{ stats?.todayPrescriptions ?? 0 }}</div>
+      <div class="stat-label">Prescriptions Today</div>
+    </div>
+  </div>
+
+  <ng-template #skeleton>
+    <div class="stats-grid">
+      <div class="stat-card skeleton" *ngFor="let i of [1, 2, 3, 4]"></div>
+    </div>
+  </ng-template>
+
+  <!-- Middle row: Token board + Revenue -->
+  <div class="mid-grid">
+    <!-- Token board -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Live Token Board</span>
+        <button class="btn-sm" (click)="callNext()">Call Next →</button>
+      </div>
+      <div class="panel-body">
+        <div class="token-split" *ngIf="tokenData; else noTokens">
+          <!-- Current -->
+          <div class="current-token-box">
+            <div class="token-label">NOW SERVING</div>
+            <div class="token-num">
+              {{ tokenData.current?.displayNumber || "—" }}
+            </div>
+            <div class="token-patient">
+              {{ tokenData.current?.patientId?.name || "No active patient" }}
+            </div>
+            <div
+              class="token-complaint"
+              *ngIf="tokenData.current?.chiefComplaint"
+            >
+              {{ tokenData.current?.chiefComplaint }}
+            </div>
+            <span class="token-status-pill">In Consultation</span>
+          </div>
+
+          <!-- Upcoming queue -->
+          <div class="upcoming">
+            <div class="upcoming-label">Upcoming Queue</div>
+            <div class="queue-list">
+              <div
+                class="queue-row"
+                *ngFor="let t of getWaiting() | slice: 0 : 5"
+                [routerLink]="['/tokens']"
+              >
+                <div class="queue-num">{{ t.displayNumber }}</div>
+                <div class="queue-info">
+                  <div class="queue-name">{{ t.patientId?.name }}</div>
+                  <div class="queue-complaint">
+                    {{ t.chiefComplaint || "General" }}
+                  </div>
+                </div>
+                <span
+                  class="queue-badge"
+                  [class.voice]="t.registeredVia === 'voice'"
+                >
+                  {{ t.registeredVia === "voice" ? "🎤 Voice" : "Walk-in" }}
+                </span>
+              </div>
+              <div class="empty-queue" *ngIf="!getWaiting().length">
+                No patients waiting
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noTokens>
+          <div class="empty-state">No token data available</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Revenue + chart -->
+    <div class="side-panels">
+      <div class="panel revenue-panel">
+        <div class="panel-head">
+          <span class="panel-title">Today's Revenue</span>
+        </div>
+        <div class="panel-body">
+          <div class="revenue-num">
+            ₹ {{ stats?.todayRevenue ?? 0 | number }}
+          </div>
+          <div class="revenue-sub">
+            {{ stats?.todayOPD ?? 0 }} consultations
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Weekly Trend</span>
+        </div>
+        <div class="panel-body">
+          <div class="bar-chart">
+            <div class="bar-wrap" *ngFor="let d of weeklyData">
+              <div
+                class="bar teal"
+                [style.height]="getBarHeight(d.patients)"
+                [title]="d.patients + ' patients'"
+              ></div>
+              <span class="bar-lbl">{{ formatDate(d.date) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's patients table -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Today's Patients</span>
+      <a routerLink="/patients" class="btn-sm">View All</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Patient</th>
+            <th>Chief Complaint</th>
+            <th>Registered Via</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tokenData?.tokens | slice: 0 : 8">
+            <td>
+              <strong class="token-code">#{{ t.displayNumber }}</strong>
+            </td>
+            <td>
+              <div class="pat-name">{{ t.patientId?.name }}</div>
+              <div class="pat-meta">
+                Age {{ t.patientId?.age }} ·
+                {{ t.patientId?.gender | titlecase }}
+              </div>
+            </td>
+            <td>{{ t.chiefComplaint || "—" }}</td>
+            <td>
+              <span
+                class="via-badge"
+                [class.voice]="t.registeredVia === 'voice'"
+              >
+                {{ t.registeredVia === "voice" ? "🎤 Voice" : "📝 Manual" }}
+              </span>
+            </td>
+            <td>
+              <span class="status-pill" [ngClass]="t.status">{{
+                t.status | titlecase
+              }}</span>
+            </td>
+            <td>
+              <a
+                class="action-link"
+                [routerLink]="['/prescriptions/new']"
+                [queryParams]="{ patientId: t.patientId?._id, tokenId: t._id }"
+              >
+                Prescribe
+              </a>
+            </td>
+          </tr>
+          <tr *ngIf="!tokenData?.tokens?.length">
+            <td colspan="6" class="empty-cell">No patients today yet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

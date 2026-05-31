@@ -1,0 +1,130 @@
+<div class="history-overlay" [class.open]="isOpen" (click)="closeOnOverlay($event)">
+  <div class="history-modal">
+
+    <!-- ── Header ────────────────────────────────────────────── -->
+    <div class="hm-header">
+      <div class="hm-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" width="18" height="18">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="2"/>
+          <line x1="9" y1="12" x2="15" y2="12"/>
+          <line x1="9" y1="16" x2="13" y2="16"/>
+        </svg>
+        Patient History
+      </div>
+      <button class="close-btn" (click)="close()">✕</button>
+    </div>
+
+    <!-- ── Loading ───────────────────────────────────────────── -->
+    <div class="hm-loading" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading history…</p>
+    </div>
+
+    <!-- ── Content ───────────────────────────────────────────── -->
+    <ng-container *ngIf="!loading && patient">
+
+      <!-- Patient summary strip -->
+      <div class="pat-summary">
+        <div class="pat-avatar-md">{{ getInitials(patient.name) }}</div>
+        <div class="pat-info">
+          <div class="pat-name">{{ patient.name }}</div>
+          <div class="pat-meta">{{ patient.patientId }} · {{ patient.age }} yrs · {{ patient.gender | titlecase }}</div>
+          <div class="pat-meta" *ngIf="patient.phone">📞 +91 {{ patient.phone }}</div>
+        </div>
+        <div class="pat-badges">
+          <span class="badge blood" *ngIf="patient.bloodGroup">{{ patient.bloodGroup }}</span>
+          <span class="badge visits">{{ patient.totalVisits }} visits</span>
+        </div>
+      </div>
+
+      <!-- Allergy warning -->
+      <div class="allergy-bar" *ngIf="patient.allergies?.length">
+        ⚠ Allergies: <strong>{{ patient.allergies.join(', ') }}</strong>
+      </div>
+
+      <!-- ── Timeline ─────────────────────────────────────────── -->
+      <div class="hm-body">
+
+        <!-- Empty -->
+        <div class="empty-history" *ngIf="!combined.length">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" width="44" height="44">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="2"/>
+          </svg>
+          <p>No visit history yet</p>
+        </div>
+
+        <!-- Visit cards -->
+        <div class="visit-card" *ngFor="let item of combined">
+
+          <!-- Date + chief complaint -->
+          <div class="visit-head">
+            <span class="visit-date">{{ item.visit.visitDate | date:'dd MMM yyyy' }}</span>
+            <span class="visit-complaint" *ngIf="item.visit.chiefComplaints?.length">
+              {{ item.visit.chiefComplaints.join(' · ') }}
+            </span>
+          </div>
+
+          <!-- Diagnosis -->
+          <div class="visit-row" *ngIf="item.visit.diagnosis || item.prescription?.diagnosis">
+            <span class="row-label">Diagnosis</span>
+            <span class="row-val diagnosis">{{ item.visit.diagnosis || item.prescription?.diagnosis }}</span>
+          </div>
+
+          <!-- Medicines -->
+          <div class="visit-row stack" *ngIf="item.prescription?.medicines?.length">
+            <span class="row-label">Medicines</span>
+            <div class="med-list">
+              <div class="med-row" *ngFor="let m of item.prescription.medicines">
+                <span class="med-name">{{ m.name }}</span>
+                <span class="med-detail">
+                  <ng-container *ngIf="m.dosage">{{ m.dosage }} &nbsp;</ng-container>
+                  <ng-container *ngIf="m.frequency">{{ m.frequency }} &nbsp;</ng-container>
+                  <ng-container *ngIf="m.duration">{{ m.duration }}</ng-container>
+                </span>
+                <span class="med-note" *ngIf="m.instructions">{{ m.instructions }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vital signs -->
+          <div class="visit-row" *ngIf="hasVitals(item.visit)">
+            <span class="row-label">Vitals</span>
+            <div class="vitals">
+              <span class="vital-chip" *ngIf="item.visit.vitalSigns?.bloodPressure?.systolic">
+                BP {{ item.visit.vitalSigns.bloodPressure.systolic }}/{{ item.visit.vitalSigns.bloodPressure.diastolic }}
+              </span>
+              <span class="vital-chip" *ngIf="item.visit.vitalSigns?.pulse">
+                Pulse {{ item.visit.vitalSigns.pulse }}
+              </span>
+              <span class="vital-chip" *ngIf="item.visit.vitalSigns?.temperature">
+                {{ item.visit.vitalSigns.temperature }}°F
+              </span>
+              <span class="vital-chip" *ngIf="item.visit.vitalSigns?.weight">
+                {{ item.visit.vitalSigns.weight }} kg
+              </span>
+              <span class="vital-chip" *ngIf="item.visit.vitalSigns?.spo2">
+                SPO₂ {{ item.visit.vitalSigns.spo2 }}%
+              </span>
+            </div>
+          </div>
+
+          <!-- Follow-up -->
+          <div class="visit-row follow-row"
+               *ngIf="item.visit.followUpDate || item.prescription?.followUpDate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" width="13" height="13">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Follow-up: <strong>{{ (item.visit.followUpDate || item.prescription?.followUpDate) | date:'dd MMM yyyy' }}</strong>
+          </div>
+
+        </div><!-- /visit-card -->
+      </div><!-- /hm-body -->
+    </ng-container>
+
+  </div>
+</div>

@@ -1,0 +1,19 @@
+.patients-page { display: flex; flex-direction: column; gap: 20px; }
+
+.btn-history {
+  margin-left: auto;
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 600; font-family: inherit;
+  border: 1.5px solid #E2E8F0; background: #fff; color: #64748B;
+  cursor: pointer; transition: all .15s;
+  &:hover { border-color: #00C896; color: #00A67D; background: #F0FDF9; }
+}
+
+.btn-queue {
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 600; font-family: inherit;
+  border: 1.5px solid #00C896; background: #E0FBF3; color: #00A67D;
+  cursor: pointer; transition: all .15s;
+  &:hover:not(:disabled) { background: #00C896; color: #fff; }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}

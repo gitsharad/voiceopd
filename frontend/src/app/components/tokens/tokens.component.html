@@ -1,0 +1,103 @@
+<div class="tokens-page">
+  <div class="page-header">
+    <h2 class="page-title">Token Queue</h2>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="callNext()" [disabled]="loading">
+        {{ loading ? 'Calling…' : 'Call Next →' }}
+      </button>
+      <button class="btn-voice-reg" (click)="openVoiceModal()">🎤 Voice Register</button>
+    </div>
+  </div>
+
+  <div class="tokens-grid" *ngIf="data">
+    <!-- Left: Current + Stats -->
+    <div class="left-col">
+      <!-- Current Token -->
+      <div class="current-card">
+        <div class="current-label">NOW SERVING</div>
+        <div class="current-number">{{ data.current?.displayNumber || '—' }}</div>
+        <div class="current-name">{{ data.current?.patientId?.name || 'No active patient' }}</div>
+        <div class="current-complaint" *ngIf="data.current?.chiefComplaint">
+          {{ data.current?.chiefComplaint }}
+        </div>
+        <div class="current-actions" *ngIf="data.current">
+          <button (click)="complete(data.current!)">✓ Complete</button>
+          <button class="skip-btn" (click)="skip(data.current!)">Skip</button>
+        </div>
+      </div>
+
+      <!-- Queue Stats -->
+      <div class="stats-card">
+        <div class="stats-row">
+          <span>Total Today</span><strong>{{ data.stats.total }}</strong>
+        </div>
+        <div class="stats-row">
+          <span>Completed</span><strong class="green">{{ data.stats.completed }}</strong>
+        </div>
+        <div class="stats-row">
+          <span>Waiting</span><strong class="amber">{{ data.stats.waiting }}</strong>
+        </div>
+        <div class="stats-row">
+          <span>Skipped</span><strong class="red">{{ data.stats.skipped }}</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="progressPct"></div>
+        </div>
+        <div class="progress-label">{{ progressPct }}% complete</div>
+      </div>
+
+      <!-- Next up -->
+      <div class="next-card" *ngIf="data.next">
+        <div class="next-label">UP NEXT</div>
+        <div class="next-info">
+          <div class="next-num">{{ data.next.displayNumber }}</div>
+          <div>
+            <div class="next-name">{{ data.next.patientId?.name }}</div>
+            <div class="next-complaint">{{ data.next.chiefComplaint || 'General' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Full queue table -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Full Queue ({{ data.stats.total }} patients)</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Patient</th><th>Complaint</th>
+              <th>Via</th><th>Registered At</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of data.tokens" [class]="t.status">
+              <td><strong class="token-code">{{ t.displayNumber }}</strong></td>
+              <td>
+                <div class="pat-name">{{ t.patientId?.name }}</div>
+                <div class="pat-meta">{{ t.patientId?.age }}y · {{ t.patientId?.gender | titlecase }}</div>
+              </td>
+              <td>{{ t.chiefComplaint || '—' }}</td>
+              <td><span class="via-chip" [class.voice]="t.registeredVia === 'voice'">{{ t.registeredVia }}</span></td>
+              <td>{{ t.createdAt | date:'HH:mm' }}</td>
+              <td><span class="status-pill" [ngClass]="t.status">{{ t.status | titlecase }}</span></td>
+              <td class="action-cell">
+                <button class="tbl-btn call" *ngIf="t.status === 'waiting'" (click)="callToken(t)">Call</button>
+                <button class="tbl-btn complete" *ngIf="t.status === 'in-consultation'" (click)="complete(t)">Done</button>
+                <button class="tbl-btn skip" *ngIf="t.status === 'waiting'" (click)="skip(t)">Skip</button>
+                <a class="tbl-btn rx" [routerLink]="['/prescriptions/new']" [queryParams]="{patientId: t.patientId?._id, tokenId: t._id}">Rx</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!data?.tokens?.length">
+    <p>No tokens for today yet. Register a patient to get started.</p>
+    <button class="btn-primary" (click)="openVoiceModal()">🎤 Register First Patient</button>
+  </div>
+</div>

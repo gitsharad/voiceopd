@@ -1,0 +1,256 @@
+<div class="modal-overlay" [class.open]="isOpen" (click)="closeOnOverlay($event)">
+  <div class="modal">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <div class="modal-head">
+      <div class="voice-ring" [class.active]="voice.isListening$ | async">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" width="28" height="28">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+        </svg>
+      </div>
+      <h3>Voice Patient Registration</h3>
+      <div class="lang-pills">
+        <span class="lang-pill" [class.active]="selectedLanguage==='marathi'"
+              (click)="selectedLanguage='marathi'">मराठी</span>
+        <span class="lang-pill" [class.active]="selectedLanguage==='hindi'"
+              (click)="selectedLanguage='hindi'">हिंदी</span>
+        <span class="lang-pill" [class.active]="selectedLanguage==='english'"
+              (click)="selectedLanguage='english'">English</span>
+      </div>
+    </div>
+
+    <!-- ── Body ───────────────────────────────────────────────── -->
+    <div class="modal-body">
+
+      <!-- Speak-all hint — always visible -->
+      <div class="speak-hint">
+        <div class="speak-hint-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               width="14" height="14" stroke-linecap="round" style="flex-shrink:0">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          </svg>
+          Click <strong>Speak All</strong> — say field name then value. Say <strong>"save patient"</strong> to submit.
+        </div>
+        <div class="speak-hint-example">
+          "patient name Ganesh Shelar, age 45, gender male, phone 9876543210, complaint fever… save patient"
+        </div>
+      </div>
+
+      <!-- ── Transcript box (live during capture, editable after) ── -->
+      <div class="transcript-box-wrap" *ngIf="isGlobalCapturing || transcriptText">
+
+        <div class="transcript-box-header">
+          <span class="tbox-label" *ngIf="isGlobalCapturing">
+            <span class="pulse-dot"></span> Listening…
+          </span>
+          <span class="tbox-label done" *ngIf="!isGlobalCapturing">
+            ✓ Captured — you can edit before re-filling
+          </span>
+          <button class="btn-refill"
+                  *ngIf="!isGlobalCapturing && transcriptText"
+                  (click)="refillFromTranscript()">
+            ↺ Re-fill fields
+          </button>
+        </div>
+
+        <textarea
+          class="transcript-textarea"
+          [(ngModel)]="transcriptText"
+          [readonly]="isGlobalCapturing"
+          rows="2"
+          placeholder="Your speech will appear here…">
+        </textarea>
+
+        <div class="tbox-footer" *ngIf="!isGlobalCapturing && transcriptText">
+          Fields below were auto-filled · Edit transcript above and tap
+          <strong>↺ Re-fill</strong> to update
+        </div>
+
+      </div>
+
+      <!-- Error -->
+      <div class="voice-error" *ngIf="voice.error$ | async as err">⚠ {{ err }}</div>
+
+      <!-- ── Form ────────────────────────────────────────────── -->
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid">
+
+          <!-- Name -->
+          <div class="form-group"
+               [class.field-active]="fieldCapturing === 'name'"
+               [class.voice-active]="voiceActiveField === 'name'"
+               [class.voice-done]="voiceFilled.has('name')">
+            <label>
+              Patient Name *
+              <span class="voice-tag" *ngIf="voiceFilled.has('name') && fieldCapturing !== 'name'">🎤</span>
+            </label>
+            <div class="input-wrap">
+              <input formControlName="name" placeholder="Full name" autocomplete="off" [class.error]="isInvalid('name')"
+                     (input)="form.get('name')?.markAsDirty()">
+              <button type="button" class="mic-btn" [class.capturing]="fieldCapturing === 'name'"
+                      [disabled]="isGlobalCapturing"
+                      (click)="fieldCapturing === 'name' ? stopAll() : captureField('name')">
+                <svg *ngIf="fieldCapturing !== 'name'" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+                <span *ngIf="fieldCapturing === 'name'" class="mic-stop">■</span>
+              </button>
+            </div>
+            <span class="field-error" *ngIf="isInvalid('name')">Name is required</span>
+            <span class="field-hint" *ngIf="fieldCapturing === 'name'">
+              <span class="pulse-dot sm"></span> Listening for name…
+            </span>
+          </div>
+
+          <!-- Age -->
+          <div class="form-group"
+               [class.field-active]="fieldCapturing === 'age'"
+               [class.voice-active]="voiceActiveField === 'age'"
+               [class.voice-done]="voiceFilled.has('age')">
+            <label>
+              Age *
+              <span class="voice-tag" *ngIf="voiceFilled.has('age') && fieldCapturing !== 'age'">🎤</span>
+            </label>
+            <div class="input-wrap">
+              <input formControlName="age" type="number" min="0" max="150"
+                     placeholder="Age" autocomplete="off" [class.error]="isInvalid('age')"
+                     (input)="form.get('age')?.markAsDirty()">
+              <button type="button" class="mic-btn" [class.capturing]="fieldCapturing === 'age'"
+                      [disabled]="isGlobalCapturing"
+                      (click)="fieldCapturing === 'age' ? stopAll() : captureField('age')">
+                <svg *ngIf="fieldCapturing !== 'age'" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+                <span *ngIf="fieldCapturing === 'age'" class="mic-stop">■</span>
+              </button>
+            </div>
+            <span class="field-error" *ngIf="isInvalid('age')">Valid age required</span>
+            <span class="field-hint" *ngIf="fieldCapturing === 'age'">
+              <span class="pulse-dot sm"></span> Listening for age…
+            </span>
+          </div>
+
+          <!-- Gender -->
+          <div class="form-group"
+               [class.field-active]="fieldCapturing === 'gender'"
+               [class.voice-active]="voiceActiveField === 'gender'"
+               [class.voice-done]="voiceFilled.has('gender')">
+            <label>
+              Gender *
+              <span class="voice-tag" *ngIf="voiceFilled.has('gender') && fieldCapturing !== 'gender'">🎤</span>
+            </label>
+            <div class="input-wrap">
+              <select formControlName="gender">
+                <option value="" disabled>Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <button type="button" class="mic-btn" [class.capturing]="fieldCapturing === 'gender'"
+                      [disabled]="isGlobalCapturing"
+                      (click)="fieldCapturing === 'gender' ? stopAll() : captureField('gender')">
+                <svg *ngIf="fieldCapturing !== 'gender'" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+                <span *ngIf="fieldCapturing === 'gender'" class="mic-stop">■</span>
+              </button>
+            </div>
+            <span class="field-hint" *ngIf="fieldCapturing === 'gender'">
+              <span class="pulse-dot sm"></span> Say "male" or "female"…
+            </span>
+          </div>
+
+          <!-- Phone -->
+          <div class="form-group"
+               [class.field-active]="fieldCapturing === 'phone'"
+               [class.voice-active]="voiceActiveField === 'phone'"
+               [class.voice-done]="voiceFilled.has('phone')">
+            <label>
+              Phone
+              <span class="voice-tag" *ngIf="voiceFilled.has('phone') && fieldCapturing !== 'phone'">🎤</span>
+            </label>
+            <div class="input-wrap">
+              <input formControlName="phone" placeholder="10-digit mobile"
+                     autocomplete="off" [class.error]="isInvalid('phone')"
+                     (input)="form.get('phone')?.markAsDirty()">
+              <button type="button" class="mic-btn" [class.capturing]="fieldCapturing === 'phone'"
+                      [disabled]="isGlobalCapturing"
+                      (click)="fieldCapturing === 'phone' ? stopAll() : captureField('phone')">
+                <svg *ngIf="fieldCapturing !== 'phone'" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+                <span *ngIf="fieldCapturing === 'phone'" class="mic-stop">■</span>
+              </button>
+            </div>
+            <span class="field-error" *ngIf="isInvalid('phone')">Enter a valid 10-digit mobile number</span>
+            <span class="field-hint" *ngIf="fieldCapturing === 'phone'">
+              <span class="pulse-dot sm"></span> Say 10-digit number…
+            </span>
+          </div>
+
+          <!-- Chief Complaint -->
+          <div class="form-group full"
+               [class.field-active]="fieldCapturing === 'chiefComplaint'"
+               [class.voice-active]="voiceActiveField === 'chiefComplaint'"
+               [class.voice-done]="voiceFilled.has('chiefComplaint')">
+            <label>
+              Chief Complaint
+              <span class="voice-tag" *ngIf="voiceFilled.has('chiefComplaint') && fieldCapturing !== 'chiefComplaint'">🎤</span>
+            </label>
+            <div class="input-wrap">
+              <input formControlName="chiefComplaint" placeholder="Fever, cough, BP check…"
+                     autocomplete="off" (input)="form.get('chiefComplaint')?.markAsDirty()">
+              <button type="button" class="mic-btn" [class.capturing]="fieldCapturing === 'chiefComplaint'"
+                      [disabled]="isGlobalCapturing"
+                      (click)="fieldCapturing === 'chiefComplaint' ? stopAll() : captureField('chiefComplaint')">
+                <svg *ngIf="fieldCapturing !== 'chiefComplaint'" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+                <span *ngIf="fieldCapturing === 'chiefComplaint'" class="mic-stop">■</span>
+              </button>
+            </div>
+            <span class="field-hint" *ngIf="fieldCapturing === 'chiefComplaint'">
+              <span class="pulse-dot sm"></span> Listening for complaint…
+            </span>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────────────── -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+      <button class="btn btn-voice"
+              [class.recording]="isGlobalCapturing"
+              [disabled]="!voice.isSupported || !!fieldCapturing"
+              (click)="isGlobalCapturing ? stopGlobal() : startGlobal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" width="14" height="14">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        </svg>
+        {{ isGlobalCapturing ? 'Stop' : 'Speak All' }}
+      </button>
+      <button class="btn btn-primary" (click)="submit()" [disabled]="isSubmitting">
+        <span *ngIf="isSubmitting">Saving…</span>
+        <span *ngIf="!isSubmitting">Save Patient</span>
+      </button>
+    </div>
+
+  </div>
+</div>

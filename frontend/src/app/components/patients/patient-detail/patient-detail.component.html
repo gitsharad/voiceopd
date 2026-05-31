@@ -1,0 +1,167 @@
+<div class="detail-page" *ngIf="patient">
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="pat-hero">
+      <div class="pat-avatar-lg">{{ getInitials(patient.name) }}</div>
+      <div>
+        <h2>{{ patient.name }}</h2>
+        <p>{{ patient.patientId }} &nbsp;·&nbsp; Age {{ patient.age }} &nbsp;·&nbsp; {{ patient.gender | titlecase }}</p>
+        <p *ngIf="patient.phone">📞 +91 {{ patient.phone }}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-danger-ghost" (click)="confirmDelete = true">🗑 Delete</button>
+      <button class="btn-ghost" (click)="openEdit()">✏ Edit</button>
+      <a class="btn-primary" [routerLink]="['/prescriptions/new']" [queryParams]="{patientId: patientId}">+ Prescribe</a>
+    </div>
+  </div>
+
+  <!-- ── Delete confirm bar ───────────────────────────────────────── -->
+  <div class="confirm-bar danger" *ngIf="confirmDelete">
+    <span>⚠ Delete <strong>{{ patient.name }}</strong>? This cannot be undone.</span>
+    <div class="confirm-actions">
+      <button class="btn-ghost sm" (click)="confirmDelete = false">Cancel</button>
+      <button class="btn-danger sm" [disabled]="deleting" (click)="deletePatient()">
+        {{ deleting ? 'Deleting…' : 'Yes, Delete' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Main grid ─────────────────────────────────────────────────── -->
+  <div class="detail-grid">
+
+    <!-- Recent Visits -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Recent Visits</span></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Date</th><th>Diagnosis</th><th>Fee</th><th>Payment</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let v of visits">
+              <td>{{ v.visitDate | date:'dd MMM yyyy' }}</td>
+              <td>{{ v.diagnosis || '—' }}</td>
+              <td>₹{{ v.consultationFee }}</td>
+              <td><span class="pay-pill" [ngClass]="v.paymentStatus">{{ v.paymentStatus | titlecase }}</span></td>
+            </tr>
+            <tr *ngIf="!visits.length">
+              <td colspan="4" class="empty-cell">No visits yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Patient Info panel -->
+    <div class="side-info">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Patient Info</span></div>
+        <div class="panel-body">
+          <div class="info-row"><span>Blood Group</span><strong>{{ patient.bloodGroup || 'Unknown' }}</strong></div>
+          <div class="info-row"><span>Allergies</span>
+            <strong class="red">{{ patient.allergies?.join(', ') || 'None' }}</strong>
+          </div>
+          <div class="info-row"><span>Chronic</span>
+            <strong>{{ patient.chronicConditions?.join(', ') || 'None' }}</strong>
+          </div>
+          <div class="info-row"><span>Total Visits</span><strong>{{ patient.totalVisits }}</strong></div>
+          <div class="info-row"><span>Registered Via</span><strong>{{ patient.registeredVia | titlecase }}</strong></div>
+          <div class="info-row"><span>Since</span><strong>{{ patient.createdAt | date:'dd MMM yyyy' }}</strong></div>
+        </div>
+      </div>
+
+      <!-- Recent Prescriptions -->
+      <div class="panel" *ngIf="prescriptions.length">
+        <div class="panel-head"><span class="panel-title">Prescriptions</span></div>
+        <div class="panel-body rx-list">
+          <a class="rx-row" *ngFor="let rx of prescriptions | slice:0:5"
+             [routerLink]="['/prescriptions', rx._id]">
+            <span class="rx-num-sm">{{ rx.prescriptionNumber }}</span>
+            <span class="rx-diag">{{ rx.diagnosis || 'No diagnosis' }}</span>
+            <span class="rx-date-sm">{{ rx.createdAt | date:'dd MMM' }}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-state" *ngIf="!patient && !loadError">
+  <div class="spinner"></div><p>Loading patient…</p>
+</div>
+<div class="loading-state" *ngIf="loadError">
+  <p style="color:#EF4444">{{ loadError }}</p>
+</div>
+
+<!-- ── Edit Patient Modal ──────────────────────────────────────────── -->
+<div class="edit-overlay" *ngIf="showEdit" (click)="closeEditOnOverlay($event)">
+  <div class="edit-modal">
+    <div class="edit-header">
+      <h3>Edit Patient Info</h3>
+      <button class="close-btn" (click)="closeEdit()">✕</button>
+    </div>
+
+    <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="edit-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name *</label>
+          <input formControlName="name" placeholder="Full name">
+          <span class="ferr" *ngIf="editForm.get('name')?.invalid && editForm.get('name')?.touched">Required</span>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input formControlName="phone" placeholder="10-digit mobile">
+          <span class="ferr" *ngIf="editForm.get('phone')?.invalid && editForm.get('phone')?.touched">Invalid number</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Age *</label>
+          <input formControlName="age" type="number" placeholder="Age">
+        </div>
+        <div class="form-group">
+          <label>Gender *</label>
+          <select formControlName="gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Blood Group</label>
+          <select formControlName="bloodGroup">
+            <option value="">Unknown</option>
+            <option *ngFor="let bg of bloodGroups" [value]="bg">{{ bg }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Allergies <small>(comma-separated)</small></label>
+          <input formControlName="allergies" placeholder="e.g. Penicillin, Aspirin">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Chronic Conditions <small>(comma-separated)</small></label>
+          <input formControlName="chronicConditions" placeholder="e.g. Diabetes, Hypertension">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Address</label>
+          <input formControlName="address" placeholder="Home address">
+        </div>
+      </div>
+
+      <div class="edit-footer">
+        <button type="button" class="btn-ghost" (click)="closeEdit()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="saving || editForm.invalid">
+          {{ saving ? 'Saving…' : 'Save Changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

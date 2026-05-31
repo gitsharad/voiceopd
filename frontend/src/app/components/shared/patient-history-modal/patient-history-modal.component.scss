@@ -1,0 +1,163 @@
+// ── Overlay ────────────────────────────────────────────────────────
+.history-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11,20,55,.6);
+  z-index: 300; display: none;
+  align-items: flex-start; justify-content: center;
+  backdrop-filter: blur(4px);
+  overflow-y: auto; padding: 24px 16px;
+  &.open { display: flex; }
+}
+
+// ── Modal shell ────────────────────────────────────────────────────
+.history-modal {
+  background: #fff; border-radius: 20px;
+  width: 560px; max-width: calc(100vw - 32px);
+  box-shadow: 0 24px 64px rgba(0,0,0,.18);
+  animation: hmIn .25s cubic-bezier(.34,1.56,.64,1);
+  margin: auto; overflow: hidden;
+}
+
+@keyframes hmIn {
+  from { transform: scale(.93) translateY(16px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+// ── Header ─────────────────────────────────────────────────────────
+.hm-header {
+  background: #0B1437; padding: 18px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hm-title {
+  display: flex; align-items: center; gap: 9px;
+  color: #fff; font-size: 16px; font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.close-btn {
+  background: rgba(255,255,255,.1); border: none; color: #fff;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 15px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .15s;
+  &:hover { background: rgba(255,255,255,.2); }
+}
+
+// ── Loading ────────────────────────────────────────────────────────
+.hm-loading {
+  padding: 48px; text-align: center; color: #94A3B8; font-size: 13px;
+}
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 14px;
+  border: 3px solid #E2E8F0; border-top-color: #00C896;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Patient summary ────────────────────────────────────────────────
+.pat-summary {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 22px 14px; border-bottom: 1px solid #F1F5F9;
+}
+.pat-avatar-md {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  background: #E0FBF3; color: #00A67D;
+  font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', sans-serif;
+  display: flex; align-items: center; justify-content: center;
+}
+.pat-info { flex: 1; }
+.pat-name { font-size: 16px; font-weight: 700; color: #0B1437; }
+.pat-meta { font-size: 12px; color: #64748B; margin-top: 2px; }
+.pat-badges { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+.badge {
+  padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+  &.blood  { background: #FEE2E2; color: #B91C1C; }
+  &.visits { background: #E0FBF3; color: #00A67D; }
+}
+
+// ── Allergy bar ────────────────────────────────────────────────────
+.allergy-bar {
+  background: #FFF7ED; border-top: 1.5px solid #FED7AA;
+  padding: 8px 22px; font-size: 12px; color: #92400E;
+  strong { font-weight: 600; }
+}
+
+// ── Body / timeline ────────────────────────────────────────────────
+.hm-body {
+  padding: 18px 22px 24px;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+}
+
+.empty-history {
+  text-align: center; padding: 40px 0; color: #94A3B8;
+  p { margin-top: 10px; font-size: 13px; }
+}
+
+// ── Visit card ─────────────────────────────────────────────────────
+.visit-card {
+  border: 1.5px solid #E2E8F0; border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 14px;
+  position: relative; background: #FAFBFC;
+
+  &:last-child { margin-bottom: 0; }
+
+  // left accent bar
+  &::before {
+    content: ''; position: absolute;
+    left: 0; top: 12px; bottom: 12px;
+    width: 3px; border-radius: 3px;
+    background: #00C896;
+  }
+}
+
+.visit-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.visit-date {
+  font-size: 13px; font-weight: 700; color: #0B1437;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.visit-complaint {
+  font-size: 12px; color: #64748B;
+  background: #F1F5F9; border-radius: 6px; padding: 2px 8px;
+}
+
+// ── Row layout inside visit card ───────────────────────────────────
+.visit-row {
+  display: flex; align-items: baseline; gap: 10px;
+  font-size: 12.5px; color: #334155; margin-top: 7px;
+
+  &.stack { align-items: flex-start; }
+  &.follow-row {
+    color: #059669; font-size: 12px; font-weight: 500;
+    align-items: center; gap: 5px; margin-top: 10px;
+    padding-top: 10px; border-top: 1px dashed #E2E8F0;
+    strong { font-weight: 700; }
+  }
+}
+.row-label {
+  font-size: 11px; font-weight: 600; color: #94A3B8;
+  text-transform: uppercase; letter-spacing: .4px;
+  min-width: 72px; flex-shrink: 0;
+}
+.row-val { color: #1E293B; }
+.diagnosis { font-weight: 600; color: #0B1437; }
+
+// ── Medicine list ──────────────────────────────────────────────────
+.med-list { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.med-row {
+  background: #fff; border: 1px solid #E2E8F0;
+  border-radius: 7px; padding: 6px 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+}
+.med-name   { font-size: 12.5px; font-weight: 600; color: #0B1437; }
+.med-detail { font-size: 11.5px; color: #64748B; }
+.med-note   { font-size: 11px; color: #059669; font-style: italic; }
+
+// ── Vital chips ────────────────────────────────────────────────────
+.vitals { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.vital-chip {
+  background: #EFF6FF; color: #1D4ED8;
+  border-radius: 6px; padding: 2px 8px;
+  font-size: 11.5px; font-weight: 500;
+}

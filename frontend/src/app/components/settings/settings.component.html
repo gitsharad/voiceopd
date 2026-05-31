@@ -1,0 +1,160 @@
+<div class="settings-page">
+  <div class="page-header">
+    <h2 class="page-title">Settings</h2>
+  </div>
+
+  <!-- Subscription banner -->
+  <div class="plan-banner">
+    <div class="plan-info">
+      <div class="plan-badge">{{ clinic?.subscriptionPlan | uppercase }} PLAN</div>
+      <h3>VoiceOPD {{ clinic?.subscriptionPlan | titlecase }}</h3>
+      <p *ngIf="trialDaysLeft > 0">{{ trialDaysLeft }} days remaining in your free trial</p>
+      <p *ngIf="trialDaysLeft === 0">Your trial has ended. Upgrade to continue.</p>
+    </div>
+    <div class="plan-price">
+      <div class="price-num">₹999</div>
+      <div class="price-per">/month onwards</div>
+      <button class="upgrade-btn">Upgrade Plan</button>
+    </div>
+  </div>
+
+  <form [formGroup]="clinicForm" (ngSubmit)="saveClinic()">
+    <div class="settings-grid">
+
+      <!-- Clinic Details -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Clinic Details</div>
+          <div class="section-sub">Basic information about your clinic</div>
+        </div>
+        <div class="section-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Clinic Name</label>
+              <input formControlName="name" placeholder="Your Clinic Name">
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input formControlName="phone" placeholder="10-digit mobile">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>City</label>
+              <input formControlName="city" placeholder="Pune">
+            </div>
+            <div class="form-group">
+              <label>State</label>
+              <input formControlName="state" placeholder="Maharashtra">
+            </div>
+            <div class="form-group">
+              <label>Pincode</label>
+              <input formControlName="pincode" placeholder="411001">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Consultation Fee (₹)</label>
+              <input formControlName="consultationFee" type="number" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPD Timing -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">OPD Timings</div>
+        </div>
+        <div class="section-body">
+          <div class="timing-row">
+            <span class="timing-label">Morning OPD</span>
+            <input formControlName="morningOpen" type="time"> to
+            <input formControlName="morningClose" type="time">
+          </div>
+          <div class="timing-row">
+            <span class="timing-label">Evening OPD</span>
+            <input formControlName="eveningOpen" type="time"> to
+            <input formControlName="eveningClose" type="time">
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice & Language -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Voice & Language</div>
+          <div class="section-sub">Languages supported for voice recognition</div>
+        </div>
+        <div class="section-body">
+          <div class="toggle-rows">
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">मराठी (Marathi)</div>
+                <div class="toggle-sub">Voice registration in Marathi</div>
+              </div>
+              <label class="toggle-wrap">
+                <input type="checkbox" formControlName="marathi">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">हिंदी (Hindi)</div>
+                <div class="toggle-sub">Voice registration in Hindi</div>
+              </div>
+              <label class="toggle-wrap">
+                <input type="checkbox" formControlName="hindi">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">English</div>
+                <div class="toggle-sub">Voice registration in English</div>
+              </div>
+              <label class="toggle-wrap">
+                <input type="checkbox" formControlName="english">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">WhatsApp Prescriptions</div>
+          <div class="section-sub">Auto-send prescriptions to patients via WhatsApp</div>
+        </div>
+        <div class="section-body">
+          <div class="toggle-rows">
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Enable WhatsApp</div>
+                <div class="toggle-sub">Send prescriptions via WhatsApp (requires Twilio)</div>
+              </div>
+              <label class="toggle-wrap">
+                <input type="checkbox" formControlName="whatsappEnabled">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group mt-12" *ngIf="clinicForm.get('whatsappEnabled')?.value">
+            <label>WhatsApp Business Number</label>
+            <input formControlName="whatsappNumber" placeholder="+91 98765 43210">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="save-bar">
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        {{ saving ? 'Saving…' : 'Save All Settings' }}
+      </button>
+    </div>
+  </form>
+
+</div>
