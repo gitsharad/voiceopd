@@ -54,11 +54,17 @@ const patientSchema = new mongoose.Schema({
 patientSchema.index({ clinicId: 1, phone: 1 }, { unique: true, sparse: true });
 patientSchema.index({ clinicId: 1, name: 'text' });
 
-// Auto-generate patientId before save
+// Auto-generate patientId before save (globally unique, with collision retry)
 patientSchema.pre('save', async function () {
-  if (!this.isNew) return;
-  const count = await this.constructor.countDocuments({ clinicId: this.clinicId });
-  this.patientId = `VOP-${String(count + 1).padStart(6, '0')}`;
+  if (!this.isNew || this.patientId) return;
+  let num = await this.constructor.countDocuments() + 1;
+  let candidate = `VOP-${String(num).padStart(6, '0')}`;
+  // Increment until we find a truly unique ID
+  while (await this.constructor.exists({ patientId: candidate })) {
+    num++;
+    candidate = `VOP-${String(num).padStart(6, '0')}`;
+  }
+  this.patientId = candidate;
 });
 
 module.exports = mongoose.model('Patient', patientSchema);
