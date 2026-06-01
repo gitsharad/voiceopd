@@ -1,9 +1,16 @@
-// ai.controller.js
-// Mock AI recommendation engine — swap getRecommendations() body for real Claude API later
+const Anthropic = require('@anthropic-ai/sdk');
 
+// ── Claude client (lazy-init so missing key doesn't crash on startup) ──────────
+let _client = null;
+const getClient = () => {
+  if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _client;
+};
+
+// ── Fallback mock for when API key is not configured ──────────────────────────
 const MOCK_DB = [
   {
-    keys: ['urti', 'upper respiratory', 'common cold', 'cold'],
+    keys: ['urti', 'upper respiratory', 'common cold', 'cold', 'cough', 'sore throat'],
     recommendation: {
       medicines: [
         { name: 'Paracetamol', dosage: '500mg', frequency: 'Thrice daily', duration: '5 days', instructions: 'After food', routeOfAdmin: 'oral' },
@@ -15,14 +22,13 @@ const MOCK_DB = [
     },
   },
   {
-    keys: ['viral fever', 'fever', 'pyrexia'],
+    keys: ['fever', 'viral fever', 'pyrexia', 'ताप'],
     recommendation: {
       medicines: [
         { name: 'Paracetamol', dosage: '650mg', frequency: 'Thrice daily', duration: '5 days', instructions: 'After food', routeOfAdmin: 'oral' },
         { name: 'Domperidone', dosage: '10mg', frequency: 'Thrice daily', duration: '3 days', instructions: 'Before food', routeOfAdmin: 'oral' },
-        { name: 'ORS Sachets', dosage: '1 sachet', frequency: 'Twice daily', duration: '3 days', instructions: 'With water', routeOfAdmin: 'oral' },
       ],
-      advice: ['Adequate rest', 'Stay hydrated — minimum 2–3 litres per day', 'Sponge with lukewarm water if fever >102°F', 'Avoid self-medication with antibiotics'],
+      advice: ['Adequate rest', 'Stay hydrated — minimum 2–3 litres per day', 'Sponge with lukewarm water if fever >102°F'],
       clinicalNotes: 'Viral fever — symptomatic management. CBC if fever persists >5 days.',
     },
   },
@@ -33,100 +39,80 @@ const MOCK_DB = [
         { name: 'Amlodipine', dosage: '5mg', frequency: 'Once daily', duration: 'Ongoing', instructions: 'Morning', routeOfAdmin: 'oral' },
         { name: 'Telmisartan', dosage: '40mg', frequency: 'Once daily', duration: 'Ongoing', instructions: 'Morning', routeOfAdmin: 'oral' },
       ],
-      advice: ['Low-salt diet (<5g/day)', 'Regular brisk walking 30 min/day', 'Avoid smoking and alcohol', 'Monitor BP daily at home', 'Do not stop medication without consulting doctor'],
-      clinicalNotes: 'Essential hypertension. Target BP <130/80 mmHg. Lifestyle modification counselled.',
+      advice: ['Low-salt diet (<5g/day)', 'Regular brisk walking 30 min/day', 'Monitor BP daily at home'],
+      clinicalNotes: 'Essential hypertension. Target BP <130/80 mmHg.',
     },
   },
   {
-    keys: ['diabetes', 'type 2 diabetes', 't2dm', 'dm2', 'diabetic'],
+    keys: ['diabetes', 'type 2 diabetes', 't2dm', 'diabetic', 'sugar'],
     recommendation: {
       medicines: [
         { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', duration: 'Ongoing', instructions: 'After food', routeOfAdmin: 'oral' },
         { name: 'Glimepiride', dosage: '1mg', frequency: 'Once daily', duration: 'Ongoing', instructions: 'Before breakfast', routeOfAdmin: 'oral' },
       ],
-      advice: ['Low-glycaemic diet — avoid sugar, white rice, maida', 'Exercise 30 min daily', 'Regular fasting blood glucose monitoring', 'Check HbA1c every 3 months', 'Foot care — daily inspection'],
-      clinicalNotes: 'T2DM on oral hypoglycaemics. Target HbA1c <7%. Counsel on diet and foot care.',
-    },
-  },
-  {
-    keys: ['gastritis', 'acidity', 'gerd', 'acid reflux', 'stomach pain', 'dyspepsia'],
-    recommendation: {
-      medicines: [
-        { name: 'Pantoprazole', dosage: '40mg', frequency: 'Once daily', duration: '14 days', instructions: 'Before breakfast', routeOfAdmin: 'oral' },
-        { name: 'Domperidone', dosage: '10mg', frequency: 'Thrice daily', duration: '7 days', instructions: 'Before food', routeOfAdmin: 'oral' },
-        { name: 'Sucralfate Suspension', dosage: '10ml', frequency: 'Twice daily', duration: '7 days', instructions: 'Empty stomach', routeOfAdmin: 'oral' },
-      ],
-      advice: ['Small frequent meals', 'Avoid spicy and oily food', 'Do not lie down for 2 hours after eating', 'Avoid NSAIDs', 'Elevate head end of bed'],
-      clinicalNotes: 'Gastritis / GERD — PPI therapy initiated. UGI endoscopy if no improvement in 4 weeks.',
-    },
-  },
-  {
-    keys: ['urinary tract infection', 'uti', 'dysuria', 'burning micturition'],
-    recommendation: {
-      medicines: [
-        { name: 'Nitrofurantoin', dosage: '100mg', frequency: 'Twice daily', duration: '7 days', instructions: 'After food', routeOfAdmin: 'oral' },
-        { name: 'Phenazopyridine', dosage: '200mg', frequency: 'Thrice daily', duration: '2 days', instructions: 'After food', routeOfAdmin: 'oral' },
-      ],
-      advice: ['Drink 2–3 litres of water daily', 'Void bladder after intercourse', 'Maintain perineal hygiene', 'Complete the full antibiotic course'],
-      clinicalNotes: 'UTI — empirical antibiotic therapy. Urine C&S advised. Review in 5 days.',
-    },
-  },
-  {
-    keys: ['migraine', 'headache', 'severe headache'],
-    recommendation: {
-      medicines: [
-        { name: 'Sumatriptan', dosage: '50mg', frequency: 'SOS', duration: '3 days', instructions: 'At onset of headache', routeOfAdmin: 'oral' },
-        { name: 'Paracetamol', dosage: '1000mg', frequency: 'SOS', duration: '3 days', instructions: 'After food', routeOfAdmin: 'oral' },
-        { name: 'Metoclopramide', dosage: '10mg', frequency: 'SOS', duration: '3 days', instructions: 'With sumatriptan', routeOfAdmin: 'oral' },
-      ],
-      advice: ['Lie in a quiet, dark room during attack', 'Identify and avoid triggers (stress, certain foods)', 'Regular sleep schedule', 'Avoid skipping meals', 'Headache diary recommended'],
-      clinicalNotes: 'Migraine without aura. Acute abortive therapy prescribed. Prophylaxis to be considered if >4 episodes/month.',
-    },
-  },
-  {
-    keys: ['asthma', 'wheezing', 'bronchospasm', 'breathlessness', 'shortness of breath'],
-    recommendation: {
-      medicines: [
-        { name: 'Salbutamol Inhaler', dosage: '100mcg', frequency: 'SOS', duration: 'Ongoing', instructions: '2 puffs as needed', routeOfAdmin: 'inhalation' },
-        { name: 'Budesonide Inhaler', dosage: '200mcg', frequency: 'Twice daily', duration: 'Ongoing', instructions: '1 puff morning and night', routeOfAdmin: 'inhalation' },
-        { name: 'Montelukast', dosage: '10mg', frequency: 'Once daily', duration: 'Ongoing', instructions: 'At bedtime', routeOfAdmin: 'oral' },
-      ],
-      advice: ['Avoid known triggers (dust, smoke, cold air)', 'Carry reliever inhaler at all times', 'Use spacer with inhaler', 'Rinse mouth after inhaled steroid', 'Pursed lip breathing exercise daily'],
-      clinicalNotes: 'Bronchial asthma — step-up therapy. Peak flow monitoring advised. Spirometry at next visit.',
-    },
-  },
-  {
-    keys: ['skin infection', 'cellulitis', 'impetigo', 'infected wound', 'wound infection'],
-    recommendation: {
-      medicines: [
-        { name: 'Amoxicillin-Clavulanate', dosage: '625mg', frequency: 'Twice daily', duration: '7 days', instructions: 'After food', routeOfAdmin: 'oral' },
-        { name: 'Mupirocin Ointment', dosage: '2%', frequency: 'Thrice daily', duration: '7 days', instructions: 'Apply to affected area', routeOfAdmin: 'topical' },
-        { name: 'Cetirizine', dosage: '10mg', frequency: 'Once daily', duration: '5 days', instructions: 'At bedtime', routeOfAdmin: 'oral' },
-      ],
-      advice: ['Keep wound clean and dry', 'Change dressing daily', 'Complete antibiotic course', 'Do not squeeze or pierce lesions', 'Wash hands frequently'],
-      clinicalNotes: 'Skin/soft tissue infection. Wound swab C&S if no improvement in 48–72 hours.',
+      advice: ['Low-glycaemic diet', 'Exercise 30 min daily', 'Regular blood glucose monitoring'],
+      clinicalNotes: 'T2DM on oral hypoglycaemics. Target HbA1c <7%.',
     },
   },
 ];
 
-function getRecommendations(diagnosis = '', symptoms = '') {
+function getMockRecommendation(diagnosis = '', symptoms = '') {
   const text = `${diagnosis} ${symptoms}`.toLowerCase();
-
   for (const entry of MOCK_DB) {
-    if (entry.keys.some(k => text.includes(k))) {
-      return entry.recommendation;
-    }
+    if (entry.keys.some(k => text.includes(k))) return entry.recommendation;
   }
-
-  // Generic fallback
   return {
     medicines: [
       { name: 'Paracetamol', dosage: '500mg', frequency: 'Thrice daily', duration: '3 days', instructions: 'After food', routeOfAdmin: 'oral' },
-      { name: 'Multivitamin', dosage: '1 tablet', frequency: 'Once daily', duration: '1 month', instructions: 'After breakfast', routeOfAdmin: 'oral' },
     ],
     advice: ['Rest adequately', 'Stay well hydrated', 'Follow up if symptoms worsen'],
     clinicalNotes: '',
   };
+}
+
+// ── Real Claude recommendation ────────────────────────────────────────────────
+async function getAiRecommendation(diagnosis, symptoms) {
+  const prompt = `You are an expert clinical decision support system for an Indian general physician (OPD setting).
+
+Given the following patient presentation, provide a concise prescription recommendation.
+
+Diagnosis: ${diagnosis || 'Not specified'}
+Symptoms: ${symptoms || 'Not specified'}
+
+Respond ONLY with a valid JSON object in this exact format (no markdown, no explanation):
+{
+  "medicines": [
+    {
+      "name": "Drug name (brand or generic)",
+      "dosage": "e.g. 500mg",
+      "frequency": "one of: 1-0-0, 0-1-0, 0-0-1, 1-0-1, 1-1-0, 0-1-1, 1-1-1, Once daily, Twice daily, Thrice daily, SOS",
+      "duration": "e.g. 5 days, 1 month, Ongoing",
+      "instructions": "e.g. After food, Before food, At bedtime",
+      "routeOfAdmin": "one of: oral, topical, injection, inhalation, other"
+    }
+  ],
+  "advice": ["advice line 1", "advice line 2"],
+  "clinicalNotes": "Brief clinical note for doctor's record"
+}
+
+Rules:
+- Provide 1–4 medicines appropriate for Indian OPD practice
+- Use generic names with common Indian brand context where helpful
+- Keep advice practical and patient-friendly
+- Clinical notes should be brief (1–2 sentences)
+- Do not include any text outside the JSON object`;
+
+  const message = await getClient().messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+
+  // Strip any accidental markdown code fences
+  const cleaned = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  return JSON.parse(cleaned);
 }
 
 // @route  POST /api/ai/recommend
@@ -136,9 +122,22 @@ exports.recommend = async (req, res, next) => {
     if (!diagnosis && !symptoms) {
       return res.status(400).json({ success: false, message: 'diagnosis or symptoms required' });
     }
-    // Simulate slight network delay so the loading state is visible
-    await new Promise(r => setTimeout(r, 500));
-    const recommendation = getRecommendations(diagnosis, symptoms);
+
+    let recommendation;
+
+    if (process.env.ANTHROPIC_API_KEY) {
+      try {
+        recommendation = await getAiRecommendation(diagnosis || '', symptoms || '');
+      } catch (aiErr) {
+        console.error('Claude API error, falling back to mock:', aiErr.message);
+        recommendation = getMockRecommendation(diagnosis, symptoms);
+      }
+    } else {
+      // No API key configured — use mock
+      await new Promise(r => setTimeout(r, 400));
+      recommendation = getMockRecommendation(diagnosis, symptoms);
+    }
+
     res.json({ success: true, data: recommendation });
   } catch (err) {
     next(err);

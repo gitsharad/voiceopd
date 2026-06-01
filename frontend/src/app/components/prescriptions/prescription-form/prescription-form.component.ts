@@ -326,16 +326,22 @@ export class PrescriptionFormComponent implements OnInit, OnDestroy {
     if (/\b(?:symptoms?|presenting\s*with)\b/i.test(raw)) {
       const sympM = /\b(?:symptoms?|presenting\s*with)\s*:?\s*(.+)/i.exec(raw);
       const sympVal = sympM?.[1]?.trim();
-      if (sympVal && sympVal.length >= 2) { this.form.patchValue({ symptoms: this.formatSymptoms(sympVal) }); set('symptoms'); }
-      else { this.rxPendingSection = 'symptoms'; this.rxActiveSection = 'symptoms'; }
+      if (sympVal && sympVal.length >= 2) {
+        this.form.patchValue({ symptoms: this.formatSymptoms(sympVal) });
+        set('symptoms');
+        this.triggerAiRecommend();
+      } else { this.rxPendingSection = 'symptoms'; this.rxActiveSection = 'symptoms'; }
       return;
     }
 
     // ── Diagnosis
     if (/\b(?:diagnosis|diagnose)\b/i.test(raw)) {
       const diagM = /\b(?:diagnosis|diagnose)\s*:?\s*(.+)/i.exec(raw);
-      if (diagM?.[1]?.trim()) { this.form.patchValue({ diagnosis: diagM[1].trim() }); set('diagnosis'); }
-      else { this.rxPendingSection = 'diagnosis'; this.rxActiveSection = 'diagnosis'; }
+      if (diagM?.[1]?.trim()) {
+        this.form.patchValue({ diagnosis: diagM[1].trim() });
+        set('diagnosis');
+        this.triggerAiRecommend();
+      } else { this.rxPendingSection = 'diagnosis'; this.rxActiveSection = 'diagnosis'; }
       return;
     }
 
@@ -382,8 +388,8 @@ export class PrescriptionFormComponent implements OnInit, OnDestroy {
   private applyToSection(section: string, value: string): void {
     if (!value || value.trim().length < 2) return;
     switch (section) {
-      case 'diagnosis': this.form.patchValue({ diagnosis: value }); break;
-      case 'symptoms':  this.form.patchValue({ symptoms: this.formatSymptoms(value) }); break;
+      case 'diagnosis': this.form.patchValue({ diagnosis: value }); this.triggerAiRecommend(); break;
+      case 'symptoms':  this.form.patchValue({ symptoms: this.formatSymptoms(value) }); this.triggerAiRecommend(); break;
       case 'clinical':  this.form.patchValue({ clinicalNotes: value }); break;
       case 'advice': {
         const ex = this.form.value.advices?.trim();
