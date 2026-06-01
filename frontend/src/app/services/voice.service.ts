@@ -145,11 +145,11 @@ export class VoiceService {
   detectActiveField(transcript: string): string | null {
     const t = transcript.toLowerCase().replace(/\bcolon\b/gi, ':');
     const LABELS: { key: string; re: RegExp }[] = [
-      { key: 'chiefComplaint', re: /\b(?:chief\s+complaint|complaint|problem|issue|takrar)\b/gi },
-      { key: 'name',           re: /\b(?:patient\s+name|patient|name|naam)\b/gi },
-      { key: 'age',            re: /\baged?\b/gi },
-      { key: 'gender',         re: /\b(?:gender|sex|ling)\b/gi },
-      { key: 'phone',          re: /\b(?:phone\s+number|mobile\s+number|phone|mobile|mob|contact|number)\b/gi },
+      { key: 'chiefComplaint', re: /\b(?:chief\s+complaint|complaint|problem|issue|takrar|त्रास|तक्रार|दुखणे|आजार)\b/gi },
+      { key: 'name',           re: /\b(?:patient\s+name|patient|name|naam|नाव|नाम|रुग्ण)\b/gi },
+      { key: 'age',            re: /\b(?:aged?|umar|vay|वय|उम्र|वर्ष)\b/gi },
+      { key: 'gender',         re: /\b(?:gender|sex|ling|लिंग|स्त्री|महिला|पुरुष|मुलगा|मुलगी|बाई)\b/gi },
+      { key: 'phone',          re: /\b(?:phone\s+number|mobile\s+number|phone|mobile|mob|contact|number|फोन|मोबाइल|नंबर)\b/gi },
     ];
     let lastField: string | null = null;
     let lastIndex = -1;
@@ -164,7 +164,7 @@ export class VoiceService {
 
   // Returns true when the spoken text contains a save/submit command.
   detectSaveCommand(transcript: string): boolean {
-    return /\b(save\s+patient|save|submit|register\s+patient|register|done|finish|complete)\b/i.test(transcript);
+    return /\b(save\s+patient|save|submit|register\s+patient|register|done|finish|complete|जतन|सेव्ह|नोंदणी|संपले)\b/i.test(transcript);
   }
 
   // Parse all patient fields from a transcript where the user speaks
@@ -181,11 +181,11 @@ export class VoiceService {
     // Label patterns — longer/more-specific first to avoid partial shadowing.
     // Each pattern matches the label + optional whitespace/colon separator.
     const LABELS: { key: string; re: RegExp }[] = [
-      { key: 'chiefComplaint', re: /\b(?:chief\s+complaint|chief complaint|complaint|problem|issue|takrar|taqrar|तक्रार|समस्या)\s*:?\s*/i },
-      { key: 'name',           re: /\b(?:patient\s+name|patient name|patient|name|naam|नाव|नाम)\s*:?\s*/i },
+      { key: 'chiefComplaint', re: /\b(?:chief\s+complaint|chief complaint|complaint|problem|issue|takrar|taqrar|तक्रार|समस्या|त्रास|दुखणे|आजार)\s*:?\s*/i },
+      { key: 'name',           re: /\b(?:patient\s+name|patient name|patient|name|naam|नाव|नाम|रुग्ण)\s*:?\s*/i },
       { key: 'age',            re: /\b(?:age|umar|vay|वय|उम्र)\s*:?\s*/i },
       { key: 'gender',         re: /\b(?:gender|sex|ling|लिंग)\s*:?\s*/i },
-      { key: 'phone',          re: /\b(?:phone\s+number|mobile\s+number|contact\s+number|phone|mobile|mob|contact|number|फोन|मोबाइल)\s*:?\s*/i },
+      { key: 'phone',          re: /\b(?:phone\s+number|mobile\s+number|contact\s+number|phone|mobile|mob|contact|number|फोन|मोबाइल|नंबर)\s*:?\s*/i },
     ];
 
     // Locate each label in the transcript
@@ -215,8 +215,8 @@ export class VoiceService {
         }
         case 'gender': {
           const g = raw.toLowerCase();
-          result.gender = /\b(female|woman|girl|महिला|श्रीमती)\b/.test(g) ? 'female'
-                        : /\bother\b/.test(g) ? 'other' : 'male';
+          result.gender = /\b(female|woman|girl|महिला|श्रीमती|स्त्री|मुलगी|बाई|बाया)\b/.test(g) ? 'female'
+                        : /\b(other|तृतीयपंथी|इतर)\b/.test(g) ? 'other' : 'male';
           break;
         }
         case 'phone': {
@@ -247,11 +247,11 @@ export class VoiceService {
       if (digits.length === 10) { result.phone = digits; w = w.replace(phoneMatch[0], ' '); }
     }
 
-    const genderM = w.match(/\b(female|woman|girl|महिला|श्रीमती|male|mail|man|boy|पुरुष|श्री|other)\b/i);
+    const genderM = w.match(/\b(female|woman|girl|महिला|श्रीमती|स्त्री|मुलगी|बाई|बाया|male|mail|man|boy|पुरुष|श्री|मुलगा|नर|other|तृतीयपंथी|इतर)\b/i);
     if (genderM) {
       const gw = genderM[1].toLowerCase();
-      result.gender = /^(female|woman|girl|महिला|श्रीमती)$/.test(gw) ? 'female'
-                    : gw === 'other' ? 'other' : 'male';
+      result.gender = /^(female|woman|girl|महिला|श्रीमती|स्त्री|मुलगी|बाई|बाया)$/.test(gw) ? 'female'
+                    : /^(other|तृतीयपंथी|इतर)$/.test(gw) ? 'other' : 'male';
       w = w.replace(genderM[0], ' ');
     }
 
@@ -294,7 +294,7 @@ export class VoiceService {
 
   private cleanName(raw: string): string {
     return raw
-      .replace(/\b(female|woman|girl|महिला|male|mail|man|boy|पुरुष|other)\b/gi, '')
+      .replace(/\b(female|woman|girl|महिला|श्रीमती|स्त्री|मुलगी|बाई|बाया|male|mail|man|boy|पुरुष|श्री|मुलगा|नर|other|तृतीयपंथी|इतर)\b/gi, '')
       .replace(/\d+/g, '')
       .replace(/\s+/g, ' ')
       .trim();
@@ -311,9 +311,9 @@ export class VoiceService {
         return m ? parseInt(m[0]) : null;
       }
       case 'gender':
-        if (/\b(female|woman|girl|महिला|श्रीमती)\b/.test(t)) return 'female';
-        if (/\b(male|mail|man|boy|पुरुष|श्री)\b/.test(t)) return 'male';
-        if (/\bother\b/.test(t)) return 'other';
+        if (/\b(female|woman|girl|महिला|श्रीमती|स्त्री|मुलगी|बाई|बाया)\b/.test(t)) return 'female';
+        if (/\b(male|mail|man|boy|पुरुष|श्री|मुलगा|नर)\b/.test(t)) return 'male';
+        if (/\b(other|तृतीयपंथी|इतर)\b/.test(t)) return 'other';
         return null;
       case 'phone': {
         // Convert spoken digit words to numerals before stripping non-digits
