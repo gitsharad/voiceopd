@@ -365,7 +365,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn-ghost" (click)="closeAddClinic()">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="addingClinic || addForm.invalid">
+        <button type="submit" class="btn-primary" [disabled]="addingClinic">
           {{ addingClinic ? 'Creating…' : 'Create Clinic' }}
         </button>
       </div>

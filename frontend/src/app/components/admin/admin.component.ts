@@ -49,7 +49,7 @@ export class AdminComponent implements OnInit {
       name:           ['', Validators.required],
       clinicName:     ['', Validators.required],
       email:          ['', [Validators.required, Validators.email]],
-      phone:          ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]],
+      phone:          ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       specialization: ['General Physician'],
       password:       ['', [Validators.required, Validators.minLength(8)]],
     });
