@@ -177,7 +177,7 @@ export class PrescriptionFormComponent implements OnInit, OnDestroy {
   newMedicine(): FormGroup {
     return this.fb.group({
       name:        ['', Validators.required],
-      dosage:      ['', Validators.required],
+      dosage:      [''],
       frequency:   ['1-1-1', Validators.required],
       duration:    ['5 days', Validators.required],
       instructions:['After food'],
@@ -519,7 +519,19 @@ export class PrescriptionFormComponent implements OnInit, OnDestroy {
 
   // ── Submit ───────────────────────────────────────────────────────
   submit(): void {
-    if (this.form.invalid || !this.patientId) {
+    if (!this.patientId) {
+      this.toast.error('Please select a patient first');
+      return;
+    }
+    // Check medicine names
+    const emptyMed = (this.form.get('medicines') as any).controls
+      .findIndex((g: any) => !g.get('name')?.value?.trim());
+    if (emptyMed !== -1) {
+      this.form.markAllAsTouched();
+      this.toast.error(`Medicine #${emptyMed + 1} name is required`);
+      return;
+    }
+    if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.toast.error('Please fill all required fields');
       return;
