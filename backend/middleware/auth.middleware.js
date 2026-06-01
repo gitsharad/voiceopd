@@ -19,8 +19,16 @@ const protect = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Account deactivated' });
     }
 
-    req.doctor = doctor;
+    req.doctor   = doctor;
     req.clinicId = doctor.clinicId;
+
+    // Block requests where clinicId is missing (except superadmin using admin routes)
+    if (!req.clinicId && doctor.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Doctor account is not linked to a clinic. Please contact support.',
+      });
+    }
     next();
   } catch (err) {
     next(err);

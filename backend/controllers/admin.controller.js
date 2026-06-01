@@ -4,6 +4,8 @@ const Patient      = require('../models/Patient.model');
 const Prescription = require('../models/Prescription.model');
 const Visit        = require('../models/Visit.model');
 const Token        = require('../models/Token.model');
+const mongoose     = require('mongoose');
+const toObjId      = (id) => new mongoose.Types.ObjectId(String(id));
 
 // @route  GET /api/admin/stats
 exports.getStats = async (req, res, next) => {
@@ -90,7 +92,7 @@ exports.getClinicDetail = async (req, res, next) => {
       Patient.find({ clinicId: req.params.id }).sort({ createdAt: -1 }).limit(5).select('name phone age gender createdAt registeredVia'),
       // Last 6 months token counts
       Token.aggregate([
-        { $match: { clinicId: clinic._id } },
+        { $match: { clinicId: toObjId(clinic._id) } },
         { $group: {
           _id: { $substr: ['$date', 0, 7] }, // YYYY-MM
           count: { $sum: 1 },
