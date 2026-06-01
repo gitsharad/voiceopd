@@ -41,6 +41,18 @@ export class AdminComponent implements OnInit {
   ngOnInit(): void {
     this.loadStats();
     this.loadClinics();
+    this.initAddForm();
+  }
+
+  private initAddForm(): void {
+    this.addForm = this.fb.group({
+      name:           ['', Validators.required],
+      clinicName:     ['', Validators.required],
+      email:          ['', [Validators.required, Validators.email]],
+      phone:          ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]],
+      specialization: ['General Physician'],
+      password:       ['', [Validators.required, Validators.minLength(8)]],
+    });
   }
 
   // ── Stats ────────────────────────────────────────────────────────
@@ -135,14 +147,7 @@ export class AdminComponent implements OnInit {
 
   // ── Add clinic ────────────────────────────────────────────────────
   openAddClinic(): void {
-    this.addForm = this.fb.group({
-      name:           ['', Validators.required],
-      clinicName:     ['', Validators.required],
-      email:          ['', [Validators.required, Validators.email]],
-      phone:          ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]],
-      specialization: ['General Physician'],
-      password:       ['', [Validators.required, Validators.minLength(8)]],
-    });
+    this.addForm.reset({ specialization: 'General Physician' });
     this.showAddClinic = true;
   }
 
