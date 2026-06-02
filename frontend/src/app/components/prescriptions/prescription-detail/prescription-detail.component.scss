@@ -143,13 +143,14 @@
   margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;
   li { font-size: 13px; color: #1E293B; line-height: 1.5; }
 }
-.advice-en { font-weight: 500; }
+.advice-en { font-weight: 500; display: block; }
 .advice-mr {
   color: #475569;
-  font-size: 12.5px;
-  font-family: 'Noto Sans Devanagari', sans-serif;
-  display: block;
-  margin-top: 1px;
+  font-size: 12px;
+  font-family: 'Noto Sans Devanagari', 'Mangal', Arial Unicode MS, sans-serif;
+  display: block !important;
+  margin-top: 2px;
+  visibility: visible !important;
 }
 
 // Follow-up

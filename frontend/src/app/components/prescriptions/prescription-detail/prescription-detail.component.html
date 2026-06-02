@@ -232,9 +232,7 @@
         <ul class="advice-list">
           <li *ngFor="let a of rx.advices; let i = index">
             <span class="advice-en">{{ a }}</span>
-            <span class="advice-mr" *ngIf="marathiAdvices[i] && marathiAdvices[i] !== a">
-              &nbsp;— {{ marathiAdvices[i] }}
-            </span>
+            <span class="advice-mr" *ngIf="marathiAdvices[i]">{{ marathiAdvices[i] }}</span>
           </li>
         </ul>
       </div>

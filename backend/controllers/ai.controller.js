@@ -144,56 +144,54 @@ exports.recommend = async (req, res, next) => {
   }
 };
 
-// ── Built-in Marathi advice dictionary (fallback) ─────────────────────────────
-const ADVICE_DICT = {
-  // Hydration
-  'drink plenty of water':             'भरपूर पाणी प्या',
-  'drink 2-3 litres of water daily':   'दररोज २-३ लिटर पाणी प्या',
-  'stay hydrated':                     'शरीरात पाण्याचे प्रमाण राखा',
-  'stay well hydrated':                'शरीरात पाण्याचे प्रमाण राखा',
-  'drink plenty of warm fluids':       'भरपूर कोमट पाणी व द्रवपदार्थ घ्या',
-  // Rest
-  'rest adequately':                   'पुरेशी विश्रांती घ्या',
-  'rest for 2-3 days':                 '२-३ दिवस विश्रांती घ्या',
-  'rest for 3 days':                   '३ दिवस विश्रांती घ्या',
-  'adequate rest':                     'पुरेशी विश्रांती घ्या',
-  // Diet
-  'low-salt diet (<5g/day)':           'कमी मीठाचा आहार घ्या (दररोज ५ ग्रॅमपेक्षा कमी)',
-  'low-glycaemic diet':                'कमी साखरेचा आहार घ्या',
-  'small frequent meals':              'थोडे-थोडे व वारंवार जेवण घ्या',
-  'avoid spicy and oily food':         'तिखट व तेलकट खाणे टाळा',
-  'avoid cold foods and drinks':       'थंड खाणे-पिणे टाळा',
-  // Exercise
-  'regular brisk walking 30 min/day': 'दररोज ३० मिनिटे वेगाने चाला',
-  'exercise 30 min daily':            'दररोज ३० मिनिटे व्यायाम करा',
-  // Medicine compliance
-  'complete the full antibiotic course':    'संपूर्ण अँटिबायोटिक कोर्स पूर्ण करा',
-  'do not stop medication without consulting doctor': 'डॉक्टरांच्या सल्ल्याशिवाय औषध बंद करू नका',
-  'take medicines as prescribed':       'सांगितल्याप्रमाणे औषधे घ्या',
-  // Follow-up
-  'follow up if symptoms worsen':       'तक्रार वाढल्यास पुन्हा येा',
-  'review if fever persists beyond 3 days': 'ताप ३ दिवसांपेक्षा जास्त राहिल्यास पुन्हा या',
-  // Steam
-  'steam inhalation twice daily':       'दिवसातून दोनदा वाफ घ्या',
-  // Smoking / alcohol
-  'avoid smoking and alcohol':          'धूम्रपान व मद्यपान टाळा',
-  // Blood pressure monitoring
-  'monitor bp daily at home':           'घरी रोज रक्तदाब तपासा',
-  // Blood sugar
-  'regular fasting blood glucose monitoring': 'नियमितपणे उपाशी रक्त साखर तपासा',
-  // Foot care
-  'foot care — daily inspection':       'रोज पायांची तपासणी करा',
-};
+// ── Built-in Marathi advice dictionary ────────────────────────────────────────
+// Keys are lowercase patterns; value is Marathi translation.
+// Uses keyword matching so slight wording differences still match.
+const ADVICE_PATTERNS = [
+  { keys: ['drink plenty of water', 'plenty of water'],       mr: 'भरपूर पाणी प्या' },
+  { keys: ['2-3 litres', '2–3 litres', 'litres of water'],    mr: 'दररोज २-३ लिटर पाणी प्या' },
+  { keys: ['stay hydrated', 'well hydrated'],                 mr: 'शरीरात पाण्याचे प्रमाण राखा' },
+  { keys: ['warm fluids', 'warm water'],                      mr: 'भरपूर कोमट पाणी व द्रवपदार्थ घ्या' },
+  { keys: ['rest adequately', 'adequate rest'],               mr: 'पुरेशी विश्रांती घ्या' },
+  { keys: ['rest for 2', 'rest for 3', 'rest for 5'],         mr: 'काही दिवस विश्रांती घ्या' },
+  { keys: ['low-salt diet', 'low salt'],                      mr: 'कमी मीठाचा आहार घ्या' },
+  { keys: ['low-glycaemic', 'low glycaemic', 'avoid sugar'],  mr: 'कमी साखरेचा आहार घ्या' },
+  { keys: ['small frequent meals'],                           mr: 'थोडे-थोडे व वारंवार जेवण घ्या' },
+  { keys: ['avoid spicy', 'oily food'],                       mr: 'तिखट व तेलकट खाणे टाळा' },
+  { keys: ['avoid cold food', 'cold drinks'],                 mr: 'थंड खाणे-पिणे टाळा' },
+  { keys: ['brisk walking', 'walking 30'],                    mr: 'दररोज ३० मिनिटे वेगाने चाला' },
+  { keys: ['exercise 30', 'exercise daily'],                  mr: 'दररोज ३० मिनिटे व्यायाम करा' },
+  { keys: ['antibiotic course', 'complete the full'],         mr: 'संपूर्ण अँटिबायोटिक कोर्स पूर्ण करा' },
+  { keys: ['do not stop medication', 'stop medication'],      mr: 'डॉक्टरांच्या सल्ल्याशिवाय औषध बंद करू नका' },
+  { keys: ['take medicines as prescribed', 'as prescribed'],  mr: 'सांगितल्याप्रमाणे औषधे घ्या' },
+  { keys: ['follow up if symptoms', 'symptoms worsen'],       mr: 'तक्रार वाढल्यास पुन्हा या' },
+  { keys: ['fever persists', 'review if fever'],              mr: 'ताप ३ दिवसांपेक्षा जास्त राहिल्यास पुन्हा या' },
+  { keys: ['steam inhalation'],                               mr: 'दिवसातून दोनदा वाफ घ्या' },
+  { keys: ['avoid smoking', 'smoking and alcohol'],           mr: 'धूम्रपान व मद्यपान टाळा' },
+  { keys: ['monitor bp', 'check bp', 'blood pressure'],       mr: 'घरी रोज रक्तदाब तपासा' },
+  { keys: ['blood glucose', 'fasting glucose'],               mr: 'नियमितपणे उपाशी रक्त साखर तपासा' },
+  { keys: ['foot care', 'foot inspection'],                   mr: 'रोज पायांची तपासणी करा' },
+  { keys: ['quiet', 'dark room', 'migraine'],                 mr: 'शांत व अंधाऱ्या खोलीत विश्रांती घ्या' },
+  { keys: ['identify', 'avoid triggers'],                     mr: 'त्रास वाढवणाऱ्या गोष्टी टाळा' },
+  { keys: ['regular sleep', 'sleep schedule'],                mr: 'नियमित झोपेची वेळ पाळा' },
+  { keys: ['avoid skipping meals', 'skip meals'],             mr: 'जेवण वगळू नका' },
+  { keys: ['wound clean', 'keep wound'],                      mr: 'जखम स्वच्छ व कोरडी ठेवा' },
+  { keys: ['change dressing'],                                mr: 'रोज ड्रेसिंग बदला' },
+  { keys: ['wash hands', 'hand hygiene'],                     mr: 'वारंवार हात धुवा' },
+  { keys: ['void bladder', 'after intercourse'],              mr: 'संभोगानंतर लघवी करा' },
+  { keys: ['rinse mouth', 'after inhaler'],                   mr: 'इनहेलर वापरल्यानंतर तोंड धुवा' },
+  { keys: ['carry inhaler', 'reliever inhaler'],              mr: 'श्वासाची औषधी नेहमी सोबत ठेवा' },
+  { keys: ['pursed lip', 'breathing exercise'],               mr: 'श्वासाचे व्यायाम रोज करा' },
+  { keys: ['hba1c', 'check hba1c'],                           mr: 'दर ३ महिन्यांनी HbA1c तपासा' },
+  { keys: ['do not squeeze', 'pierce lesion'],                mr: 'फोड किंवा पुरळ दाबू नका' },
+];
 
 function dictTranslate(line) {
-  const key = line.toLowerCase().trim();
-  // Exact match
-  if (ADVICE_DICT[key]) return ADVICE_DICT[key];
-  // Partial match
-  for (const [k, v] of Object.entries(ADVICE_DICT)) {
-    if (key.includes(k) || k.includes(key)) return v;
+  const key = line.toLowerCase().replace(/[–—]/g, '-').trim();
+  for (const { keys, mr } of ADVICE_PATTERNS) {
+    if (keys.some(k => key.includes(k))) return mr;
   }
-  return null;
+  return '';  // Return empty string (not original) so *ngIf hides it
 }
 
 // @route  POST /api/ai/translate-advice
@@ -207,31 +205,32 @@ exports.translateAdvice = async (req, res, next) => {
     // Try Claude first if API key is set
     if (process.env.ANTHROPIC_API_KEY) {
       try {
-        const prompt = `Translate each of the following medical advice lines from English to Marathi (Devanagari script). Keep the translation clear and patient-friendly.
+        const prompt = `Translate each medical advice line below from English to Marathi (Devanagari script). Keep it clear and patient-friendly for an Indian OPD setting.
 
-Return ONLY a JSON array of strings — one Marathi translation per line, in the same order. No explanation, no markdown.
+Return ONLY a valid JSON array of strings — same count as input, same order. No markdown, no explanation outside the JSON.
 
-Advice lines:
 ${advices.map((a, i) => `${i + 1}. ${a}`).join('\n')}`;
 
         const message = await getClient().messages.create({
           model: 'claude-haiku-4-5',
-          max_tokens: 512,
+          max_tokens: 800,
           messages: [{ role: 'user', content: prompt }],
         });
 
-        const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]';
+        const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
         const cleaned = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
         const translations = JSON.parse(cleaned);
 
-        return res.json({ success: true, data: translations });
+        if (Array.isArray(translations) && translations.length === advices.length) {
+          return res.json({ success: true, data: translations });
+        }
       } catch (err) {
         console.error('Claude translate error, using dict fallback:', err.message);
       }
     }
 
-    // Dictionary fallback
-    const translations = advices.map(a => dictTranslate(a) || a);
+    // Dictionary fallback — returns '' for unrecognised lines (frontend hides those)
+    const translations = advices.map(a => dictTranslate(a));
     res.json({ success: true, data: translations });
   } catch (err) {
     next(err);
