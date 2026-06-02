@@ -140,9 +140,11 @@
 
 // Advice
 .advice-list {
-  margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;
-  li { font-size: 13px; color: #1E293B; }
+  margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;
+  li { font-size: 13px; color: #1E293B; line-height: 1.5; }
 }
+.advice-en { font-weight: 500; }
+.advice-mr { color: #475569; font-size: 12.5px; }
 
 // Follow-up
 .follow-up-row {

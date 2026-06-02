@@ -228,9 +228,14 @@
 
       <!-- Advice -->
       <div class="slip-section" *ngIf="rx.advices?.length">
-        <div class="section-label">Advice</div>
+        <div class="section-label">Advice / सल्ला</div>
         <ul class="advice-list">
-          <li *ngFor="let a of rx.advices">{{ a }}</li>
+          <li *ngFor="let a of rx.advices; let i = index">
+            <span class="advice-en">{{ a }}</span>
+            <span class="advice-mr" *ngIf="marathiAdvices[i] && marathiAdvices[i] !== a">
+              &nbsp;— {{ marathiAdvices[i] }}
+            </span>
+          </li>
         </ul>
       </div>
 

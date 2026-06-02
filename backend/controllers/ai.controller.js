@@ -143,3 +143,97 @@ exports.recommend = async (req, res, next) => {
     next(err);
   }
 };
+
+// ── Built-in Marathi advice dictionary (fallback) ─────────────────────────────
+const ADVICE_DICT = {
+  // Hydration
+  'drink plenty of water':             'भरपूर पाणी प्या',
+  'drink 2-3 litres of water daily':   'दररोज २-३ लिटर पाणी प्या',
+  'stay hydrated':                     'शरीरात पाण्याचे प्रमाण राखा',
+  'stay well hydrated':                'शरीरात पाण्याचे प्रमाण राखा',
+  'drink plenty of warm fluids':       'भरपूर कोमट पाणी व द्रवपदार्थ घ्या',
+  // Rest
+  'rest adequately':                   'पुरेशी विश्रांती घ्या',
+  'rest for 2-3 days':                 '२-३ दिवस विश्रांती घ्या',
+  'rest for 3 days':                   '३ दिवस विश्रांती घ्या',
+  'adequate rest':                     'पुरेशी विश्रांती घ्या',
+  // Diet
+  'low-salt diet (<5g/day)':           'कमी मीठाचा आहार घ्या (दररोज ५ ग्रॅमपेक्षा कमी)',
+  'low-glycaemic diet':                'कमी साखरेचा आहार घ्या',
+  'small frequent meals':              'थोडे-थोडे व वारंवार जेवण घ्या',
+  'avoid spicy and oily food':         'तिखट व तेलकट खाणे टाळा',
+  'avoid cold foods and drinks':       'थंड खाणे-पिणे टाळा',
+  // Exercise
+  'regular brisk walking 30 min/day': 'दररोज ३० मिनिटे वेगाने चाला',
+  'exercise 30 min daily':            'दररोज ३० मिनिटे व्यायाम करा',
+  // Medicine compliance
+  'complete the full antibiotic course':    'संपूर्ण अँटिबायोटिक कोर्स पूर्ण करा',
+  'do not stop medication without consulting doctor': 'डॉक्टरांच्या सल्ल्याशिवाय औषध बंद करू नका',
+  'take medicines as prescribed':       'सांगितल्याप्रमाणे औषधे घ्या',
+  // Follow-up
+  'follow up if symptoms worsen':       'तक्रार वाढल्यास पुन्हा येा',
+  'review if fever persists beyond 3 days': 'ताप ३ दिवसांपेक्षा जास्त राहिल्यास पुन्हा या',
+  // Steam
+  'steam inhalation twice daily':       'दिवसातून दोनदा वाफ घ्या',
+  // Smoking / alcohol
+  'avoid smoking and alcohol':          'धूम्रपान व मद्यपान टाळा',
+  // Blood pressure monitoring
+  'monitor bp daily at home':           'घरी रोज रक्तदाब तपासा',
+  // Blood sugar
+  'regular fasting blood glucose monitoring': 'नियमितपणे उपाशी रक्त साखर तपासा',
+  // Foot care
+  'foot care — daily inspection':       'रोज पायांची तपासणी करा',
+};
+
+function dictTranslate(line) {
+  const key = line.toLowerCase().trim();
+  // Exact match
+  if (ADVICE_DICT[key]) return ADVICE_DICT[key];
+  // Partial match
+  for (const [k, v] of Object.entries(ADVICE_DICT)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return null;
+}
+
+// @route  POST /api/ai/translate-advice
+exports.translateAdvice = async (req, res, next) => {
+  try {
+    const { advices } = req.body;
+    if (!Array.isArray(advices) || advices.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Try Claude first if API key is set
+    if (process.env.ANTHROPIC_API_KEY) {
+      try {
+        const prompt = `Translate each of the following medical advice lines from English to Marathi (Devanagari script). Keep the translation clear and patient-friendly.
+
+Return ONLY a JSON array of strings — one Marathi translation per line, in the same order. No explanation, no markdown.
+
+Advice lines:
+${advices.map((a, i) => `${i + 1}. ${a}`).join('\n')}`;
+
+        const message = await getClient().messages.create({
+          model: 'claude-haiku-4-5',
+          max_tokens: 512,
+          messages: [{ role: 'user', content: prompt }],
+        });
+
+        const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : '[]';
+        const cleaned = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+        const translations = JSON.parse(cleaned);
+
+        return res.json({ success: true, data: translations });
+      } catch (err) {
+        console.error('Claude translate error, using dict fallback:', err.message);
+      }
+    }
+
+    // Dictionary fallback
+    const translations = advices.map(a => dictTranslate(a) || a);
+    res.json({ success: true, data: translations });
+  } catch (err) {
+    next(err);
+  }
+};

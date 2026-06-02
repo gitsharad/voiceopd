@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { PrescriptionService } from '../../../services/prescription.service';
 import { ToastService } from '../../../services/toast.service';
+import { AiService } from '../../../services/ai.service';
 import { Prescription } from '../../../models';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -31,20 +32,37 @@ export class PrescriptionDetailComponent implements OnInit {
   confirmDelete = false;
   deleting      = false;
 
+  // Marathi translations of advice
+  marathiAdvices: string[] = [];
+
   constructor(
     private route:     ActivatedRoute,
     private router:    Router,
     private fb:        FormBuilder,
     private rxService: PrescriptionService,
     private toast:     ToastService,
+    private aiService: AiService,
   ) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.loading = true;
     this.rxService.getPrescription(id).subscribe({
-      next: res => { this.rx = res.data; this.loading = false; },
+      next: res => {
+        this.rx = res.data;
+        this.loading = false;
+        this.fetchMarathiAdvice();
+      },
       error: ()  => { this.loading = false; this.router.navigate(['/prescriptions']); },
+    });
+  }
+
+  fetchMarathiAdvice(): void {
+    const advices = (this.rx as any)?.advices;
+    if (!advices?.length) return;
+    this.aiService.translateAdvice(advices).subscribe({
+      next: res => { this.marathiAdvices = res.data || []; },
+      error: ()  => { this.marathiAdvices = []; },
     });
   }
 
@@ -100,6 +118,7 @@ export class PrescriptionDetailComponent implements OnInit {
         this.editMode = false;
         this.saving   = false;
         this.toast.success('Prescription updated');
+        this.fetchMarathiAdvice();
       },
       error: () => { this.saving = false; },
     });
