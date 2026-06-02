@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const medicineSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
-  dosage: { type: String, required: true }, // e.g. "500mg"
+  dosage: { type: String, default: '' }, // e.g. "500mg"
   frequency: { type: String, required: true }, // e.g. "1-0-1"
   duration: { type: String, required: true }, // e.g. "5 days"
   instructions: { type: String, trim: true }, // e.g. "After food"
@@ -53,14 +53,19 @@ const prescriptionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Auto-generate prescription number
+// Auto-generate prescription number (globally unique with collision retry)
 prescriptionSchema.pre('save', async function () {
-  if (!this.isNew) return;
-  const count = await this.constructor.countDocuments({ clinicId: this.clinicId });
+  if (!this.isNew || this.prescriptionNumber) return;
   const date = new Date();
   const yy = String(date.getFullYear()).slice(-2);
   const mm = String(date.getMonth() + 1).padStart(2, '0');
-  this.prescriptionNumber = `RX${yy}${mm}-${String(count + 1).padStart(5, '0')}`;
+  let num = await this.constructor.countDocuments() + 1;
+  let candidate = `RX${yy}${mm}-${String(num).padStart(5, '0')}`;
+  while (await this.constructor.exists({ prescriptionNumber: candidate })) {
+    num++;
+    candidate = `RX${yy}${mm}-${String(num).padStart(5, '0')}`;
+  }
+  this.prescriptionNumber = candidate;
 });
 
 module.exports = mongoose.model('Prescription', prescriptionSchema);
