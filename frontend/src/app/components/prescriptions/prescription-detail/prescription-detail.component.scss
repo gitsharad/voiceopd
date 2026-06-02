@@ -144,7 +144,13 @@
   li { font-size: 13px; color: #1E293B; line-height: 1.5; }
 }
 .advice-en { font-weight: 500; }
-.advice-mr { color: #475569; font-size: 12.5px; }
+.advice-mr {
+  color: #475569;
+  font-size: 12.5px;
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  display: block;
+  margin-top: 1px;
+}
 
 // Follow-up
 .follow-up-row {

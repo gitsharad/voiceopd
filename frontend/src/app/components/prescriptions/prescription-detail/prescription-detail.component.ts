@@ -34,6 +34,7 @@ export class PrescriptionDetailComponent implements OnInit {
 
   // Marathi translations of advice
   marathiAdvices: string[] = [];
+  marathiLoading  = false;
 
   constructor(
     private route:     ActivatedRoute,
@@ -60,9 +61,10 @@ export class PrescriptionDetailComponent implements OnInit {
   fetchMarathiAdvice(): void {
     const advices = (this.rx as any)?.advices;
     if (!advices?.length) return;
+    this.marathiLoading = true;
     this.aiService.translateAdvice(advices).subscribe({
-      next: res => { this.marathiAdvices = res.data || []; },
-      error: ()  => { this.marathiAdvices = []; },
+      next: res => { this.marathiAdvices = res.data || []; this.marathiLoading = false; },
+      error: ()  => { this.marathiAdvices = []; this.marathiLoading = false; },
     });
   }
 
@@ -138,11 +140,16 @@ export class PrescriptionDetailComponent implements OnInit {
 
   // ── PDF ──────────────────────────────────────────────────────────
   private async buildPdfBlob(): Promise<Blob> {
+    // Wait for fonts (including Noto Sans Devanagari) to fully load
+    await (document as any).fonts.ready;
+
     const slip = document.querySelector('.rx-slip') as HTMLElement;
     const canvas = await html2canvas(slip, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       backgroundColor: '#ffffff',
+      logging: false,
     });
     const imgData = canvas.toDataURL('image/png');
     const pdf     = new jsPDF('p', 'mm', 'a4');
@@ -176,6 +183,15 @@ export class PrescriptionDetailComponent implements OnInit {
     if (this.generatingPdf) return;
     this.generatingPdf = true;
     try {
+      // Wait for Marathi translations to finish loading before capturing PDF
+      if (this.marathiLoading) {
+        await new Promise<void>(resolve => {
+          const check = setInterval(() => {
+            if (!this.marathiLoading) { clearInterval(check); resolve(); }
+          }, 100);
+          setTimeout(() => { clearInterval(check); resolve(); }, 3000); // 3s max wait
+        });
+      }
       const blob     = await this.buildPdfBlob();
       const fileName = `Rx-${(this.rx as any).prescriptionNumber}.pdf`;
       const file     = new File([blob], fileName, { type: 'application/pdf' });
@@ -238,7 +254,19 @@ export class PrescriptionDetailComponent implements OnInit {
     }).catch(() => {});
   }
 
-  print(): void { window.print(); }
+  async print(): Promise<void> {
+    // Wait for Marathi translations before printing
+    if (this.marathiLoading) {
+      await new Promise<void>(resolve => {
+        const check = setInterval(() => {
+          if (!this.marathiLoading) { clearInterval(check); resolve(); }
+        }, 100);
+        setTimeout(() => { clearInterval(check); resolve(); }, 3000);
+      });
+    }
+    await (document as any).fonts.ready;
+    window.print();
+  }
 
   // ── Getters ──────────────────────────────────────────────────────
   get rxAny():   any { return this.rx; }
