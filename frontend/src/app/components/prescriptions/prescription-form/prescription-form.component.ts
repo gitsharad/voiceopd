@@ -428,77 +428,128 @@ export class PrescriptionFormComponent implements OnInit, OnDestroy {
     const med: any = { routeOfAdmin: 'oral' };
     let r = raw;
 
-    // Instructions (match longest first)
-    const INSTR = [
-      'after food','before food','with food','empty stomach','before meal','after meal',
-      'before bed','at bedtime','bedtime','with water','with milk','after breakfast',
-      'before breakfast','after dinner','before dinner',
+    // ── Word-number map (used for dosage + duration) ──────────────
+    const WN: Record<string, string> = {
+      zero:'0',one:'1',two:'2',three:'3',four:'4',five:'5',
+      six:'6',seven:'7',eight:'8',nine:'9',ten:'10',
+      eleven:'11',twelve:'12',fourteen:'14',fifteen:'15',
+      twenty:'20',thirty:'30',forty:'40',fifty:'50',
+      hundred:'100', 'five hundred':'500', 'two fifty':'250',
+      एक:'1', दोन:'2', तीन:'3', चार:'4', पाच:'5',
+      सहा:'6', सात:'7', आठ:'8', नऊ:'9', दहा:'10',
+    };
+    const toNum = (s: string) => {
+      let out = s;
+      for (const [w, n] of Object.entries(WN))
+        out = out.replace(new RegExp(`\\b${w}\\b`, 'gi'), n);
+      return out;
+    };
+
+    // ── Instructions ─────────────────────────────────────────────
+    const INSTR: [RegExp, string][] = [
+      [/\b(after\s+food|after\s+meal|after\s+eating|khane\s+ke\s+baad|jevan\s+nanthar|जेवणानंतर)\b/i, 'After food'],
+      [/\b(before\s+food|before\s+meal|khane\s+se\s+pehle|jevan\s+puri|जेवणाआधी)\b/i,                 'Before food'],
+      [/\b(with\s+food|with\s+meals?)\b/i,                                                              'With food'],
+      [/\b(empty\s+stomach|on\s+empty\s+stomach|rikam\s+pot|रिकाम्या\s+पोटी)\b/i,                     'Empty stomach'],
+      [/\b(after\s+breakfast)\b/i,                                                                      'After breakfast'],
+      [/\b(before\s+breakfast)\b/i,                                                                     'Before breakfast'],
+      [/\b(after\s+dinner|after\s+supper)\b/i,                                                          'After dinner'],
+      [/\b(before\s+dinner|before\s+supper)\b/i,                                                        'Before dinner'],
+      [/\b(at\s+bedtime|before\s+bed|bedtime|at\s+night|night\s+time|ratri|रात्री)\b/i,                'At bedtime'],
+      [/\b(with\s+water|with\s+milk|with\s+warm\s+water)\b/i,                                           'With water'],
     ];
-    for (const instr of INSTR) {
-      const re = new RegExp(`\\b${instr.replace(/ /g,'\\s+')}\\b`, 'gi');
-      if (re.test(r)) {
-        med.instructions = instr.charAt(0).toUpperCase() + instr.slice(1);
-        r = r.replace(re, ' ');
-        break;
-      }
+    for (const [re, label] of INSTR) {
+      if (re.test(r)) { med.instructions = label; r = r.replace(re, ' '); break; }
     }
 
-    // Route of administration
-    if (/\b(topical|cream|ointment|gel)\b/i.test(r))   { med.routeOfAdmin = 'topical';    r = r.replace(/\b(topical|cream|ointment|gel)\b/gi, ' '); }
-    else if (/\b(injection|inj|im|iv)\b/i.test(r))     { med.routeOfAdmin = 'injection';  r = r.replace(/\b(injection|inj|im|iv)\b/gi, ' '); }
-    else if (/\b(inhal|inhaler|nebul)\b/i.test(r))     { med.routeOfAdmin = 'inhalation'; r = r.replace(/\b(inhal\w*|nebul\w*)\b/gi, ' '); }
+    // ── Route of administration ───────────────────────────────────
+    if (/\b(topical|cream|ointment|gel|lotion|मलम)\b/i.test(r)) {
+      med.routeOfAdmin = 'topical';
+      r = r.replace(/\b(topical|cream|ointment|gel|lotion|मलम)\b/gi, ' ');
+    } else if (/\b(injection|inj|im\b|iv\b|intramuscular|intravenous|इंजेक्शन)\b/i.test(r)) {
+      med.routeOfAdmin = 'injection';
+      r = r.replace(/\b(injection|inj|im\b|iv\b|intramuscular|intravenous|इंजेक्शन)\b/gi, ' ');
+    } else if (/\b(inhaler?|inhal\w*|nebuliz\w*|puff|पफ)\b/i.test(r)) {
+      med.routeOfAdmin = 'inhalation';
+      r = r.replace(/\b(inhaler?|inhal\w*|nebuliz\w*|puff|पफ)\b/gi, ' ');
+    } else if (/\b(eye\s+drop|ear\s+drop|nasal\s+spray|nasal\s+drop|drop)\b/i.test(r)) {
+      med.routeOfAdmin = 'other';
+      r = r.replace(/\b(eye\s+drops?|ear\s+drops?|nasal\s+spray|nasal\s+drops?|drops?)\b/gi, ' ');
+    }
 
-    // Frequency (longest patterns first)
+    // ── Frequency (longest/most-specific first) ───────────────────
     const FREQ: [RegExp, string][] = [
-      [/\bthree\s+times\s+(a\s+)?day\b/i,  'Thrice daily'],
-      [/\bthrice\s*(daily|a\s*day)?\b/i,   'Thrice daily'],
-      [/\btds\b/i,                          'Thrice daily'],
-      [/\btwice\s*(daily|a\s*day)?\b/i,    'Twice daily'],
-      [/\btwo\s+times\s+(a\s+)?day\b/i,    'Twice daily'],
-      [/\bbd\b/i,                           'Twice daily'],
-      [/\bonce\s*(daily|a\s*day)?\b/i,     'Once daily'],
-      [/\bod\b/i,                           'Once daily'],
-      [/\bsos\b/i,                          'SOS'],
-      [/\bas\s+needed\b/i,                  'SOS'],
-      [/\bwhen\s+needed\b/i,                'SOS'],
-      [/\bmorning\s+(and\s+)?evening\b/i,  '1-0-1'],
-      [/\bmorning\s+(and\s+)?night\b/i,    '1-0-1'],
-      [/\bmorning\s+only\b/i,              '1-0-0'],
-      [/\bnight\s+only\b/i,               '0-0-1'],
-      [/\b1-1-1\b/,                        '1-1-1'],
-      [/\b1-0-1\b/,                        '1-0-1'],
-      [/\b1-0-0\b/,                        '1-0-0'],
-      [/\b0-0-1\b/,                        '0-0-1'],
-      [/\b0-1-0\b/,                        '0-1-0'],
+      // 1-1-1
+      [/\b(morning\s+afternoon\s+evening|morning\s+noon\s+night|morning\s+afternoon\s+night|three\s+times|teen\s+vela|तीन\s+वेळा|din\s+mein\s+teen\s+baar|तीनदा)\b/i, '1-1-1'],
+      [/\b(thrice\s*(daily|a\s*day)?|tds|tid)\b/i, 'Thrice daily'],
+      [/\bthree\s+times\s+(a\s+)?day\b/i,           'Thrice daily'],
+      // 1-0-1
+      [/\b(morning\s+(and\s+)?evening|morning\s+(and\s+)?night|subah\s+sham|subah\s+raat|दोन\s+वेळा\s*-?\s*सकाळ|सकाळ\s+संध्याकाळ)\b/i, '1-0-1'],
+      // Twice daily
+      [/\b(twice\s*(daily|a\s*day)?|bd\b|two\s+times\s+(a\s+)?day|don\s+vela|दोनदा|दोन\s+वेळा)\b/i, 'Twice daily'],
+      // Once daily
+      [/\b(once\s*(daily|a\s*day)?|od\b|one\s+time|ek\s+vela|एकदा|एक\s+वेळा|roj\s+ek)\b/i,         'Once daily'],
+      // Morning only
+      [/\b(morning\s+only|only\s+morning|morning\s+dose|subah|सकाळी\s+एकदा|सकाळी)\b/i,              '1-0-0'],
+      // Night only
+      [/\b(night\s+only|only\s+at\s+night|bedtime\s+only|ratri|रात्री\s+एकदा)\b/i,                  '0-0-1'],
+      // SOS
+      [/\b(sos|as\s+needed|when\s+needed|prn|if\s+required|गरज\s+असेल\s+तेव्हा)\b/i,               'SOS'],
+      // Numeric patterns
+      [/\b1[-–]1[-–]1\b/,   '1-1-1'],
+      [/\b1[-–]0[-–]1\b/,   '1-0-1'],
+      [/\b1[-–]1[-–]0\b/,   '1-1-0'],
+      [/\b0[-–]1[-–]1\b/,   '0-1-1'],
+      [/\b1[-–]0[-–]0\b/,   '1-0-0'],
+      [/\b0[-–]0[-–]1\b/,   '0-0-1'],
+      [/\b0[-–]1[-–]0\b/,   '0-1-0'],
     ];
     for (const [re, val] of FREQ) {
       if (re.test(r)) { med.frequency = val; r = r.replace(re, ' '); break; }
     }
 
-    // Duration (convert word-numbers first)
-    const WN: Record<string, number> = { one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,fourteen:14,fifteen:15,twenty:20,thirty:30 };
-    let rn = r;
-    for (const [w, n] of Object.entries(WN)) rn = rn.replace(new RegExp(`\\b${w}\\b`, 'gi'), String(n));
-
-    if (/\bongoing\b/i.test(rn))        { med.duration = 'Ongoing'; r = r.replace(/\bongoing\b/gi, ' '); }
-    else {
-      const durM = rn.match(/\b(\d+)\s*(day|days|week|weeks|month|months)\b/i);
+    // ── Duration ──────────────────────────────────────────────────
+    let rn = toNum(r);
+    if (/\b(ongoing|continue|lifelong|niyamit|नियमित|आजीवन)\b/i.test(rn)) {
+      med.duration = 'Ongoing';
+      r = r.replace(/\b(ongoing|continue|lifelong|niyamit|नियमित|आजीवन)\b/gi, ' ');
+    } else {
+      const durM = rn.match(/\b(\d+)\s*(day|days|divas|दिवस|week|weeks|month|months|mahina|महिना)\b/i);
       if (durM) {
-        const n    = parseInt(durM[1]);
-        const unit = durM[2].toLowerCase();
-        if (unit.startsWith('day'))   med.duration = `${n} ${n === 1 ? 'day' : 'days'}`;
-        else if (unit.startsWith('week'))  med.duration = `${n * 7} days`;
-        else if (unit.startsWith('month')) med.duration = `${n} ${n === 1 ? 'month' : 'months'}`;
+        const n = parseInt(durM[1]);
+        const u = durM[2].toLowerCase();
+        if (/^(day|divas|दिवस)/.test(u))         med.duration = `${n} ${n === 1 ? 'day' : 'days'}`;
+        else if (/^week/.test(u))                 med.duration = `${n * 7} days`;
+        else if (/^(month|mahina|महिना)/.test(u)) med.duration = `${n} ${n === 1 ? 'month' : 'months'}`;
         r = r.replace(durM[0], ' ');
       }
     }
 
-    // Dosage: Xmg / Xml / Xg / Xmcg / Xiu
-    const dosM = r.match(/\b(\d+(?:\.\d+)?)\s*(mg|ml|mcg|g\b|iu|units?)\b/i);
-    if (dosM) { med.dosage = dosM[0].replace(/\s+/, ''); r = r.replace(dosM[0], ' '); }
+    // ── Dosage ────────────────────────────────────────────────────
+    // Convert word-numbers first then match units
+    let rd = toNum(r);
+    const dosM = rd.match(/\b(\d+(?:\.\d+)?)\s*(mg|milligram\w*|ml|milliliter\w*|mcg|microgram\w*|g\b|gram\w*|iu|units?|tab\w*|cap\w*|puff\w*|drop\w*|sachet\w*|lozenge\w*)\b/i);
+    if (dosM) {
+      // Normalise unit
+      const unit = dosM[2].toLowerCase();
+      const normUnit = unit.startsWith('millig') ? 'mg'
+                     : unit.startsWith('millil') ? 'ml'
+                     : unit.startsWith('microg') ? 'mcg'
+                     : unit.startsWith('gram')   ? 'g'
+                     : unit.startsWith('tab')    ? 'tab'
+                     : unit.startsWith('cap')    ? 'cap'
+                     : unit.startsWith('puff')   ? 'puff'
+                     : unit.startsWith('drop')   ? 'drops'
+                     : unit.startsWith('sachet') ? 'sachet'
+                     : unit;
+      med.dosage = `${dosM[1]}${normUnit}`;
+      r = r.replace(dosM[0], ' ');
+    }
 
-    // Name: whatever is left
-    const name = r.replace(/\s+/g, ' ').trim().replace(/^[^a-zA-Zऀ-ॿ]+/, '').replace(/[^a-zA-Zऀ-ॿ]+$/, '');
+    // ── Name: whatever is left ────────────────────────────────────
+    const name = r.replace(/\s+/g, ' ').trim()
+                  .replace(/^[^a-zA-Zऀ-ॿ]+/, '')
+                  .replace(/[^a-zA-Zऀ-ॿ]+$/, '');
     if (name.length >= 2) med.name = name.charAt(0).toUpperCase() + name.slice(1);
 
     return med;
